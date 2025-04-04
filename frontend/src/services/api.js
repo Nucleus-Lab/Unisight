@@ -93,4 +93,19 @@ export const getCanvasFirstVisualization = async (canvasId) => {
     console.error('Error fetching first visualization:', error);
     throw error;
   }
+};
+
+export const getCanvasMessages = async (canvasId) => {
+  try {
+    const response = await fetch(`${BACKEND_API_BASE_URL}/canvas/${canvasId}/messages`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch messages');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    throw error;
+  }
 }; 

@@ -1,17 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useChatContext } from '../../contexts/ChatContext';
+import { useCanvas } from '../../contexts/CanvasContext';
 import { usePrivy } from '@privy-io/react-auth';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { sendMessage } from '../../services/api';
+import { sendMessage, getCanvasMessages } from '../../services/api';
 import Message from '../chat/Message';
 
 const ChatInterface = () => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const { isChatOpen, setIsChatOpen } = useChatContext();
+  const { currentCanvasId, setCurrentCanvasId, clearCanvas } = useCanvas();
   const { ready, authenticated, user, login } = usePrivy();
-  const [currentCanvasId, setCurrentCanvasId] = useState(null);
   const messagesEndRef = useRef(null);
   
   console.log('Current canvas ID:', currentCanvasId);
@@ -24,6 +26,40 @@ const ChatInterface = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load messages when canvas changes
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (currentCanvasId) {
+        setIsLoadingHistory(true);
+        try {
+          const history = await getCanvasMessages(currentCanvasId);
+          setMessages(history.map(msg => ({
+            id: msg.message_id,
+            text: msg.text,
+            isUser: true, // Adjust based on your message structure
+            timestamp: msg.created_at
+          })));
+        } catch (error) {
+          console.error('Failed to load messages:', error);
+        } finally {
+          setIsLoadingHistory(false);
+        }
+      } else {
+        setMessages([]); // Clear messages when no canvas is selected
+      }
+    };
+
+    loadMessages();
+  }, [currentCanvasId]);
+
+  // Clear messages and canvas when authentication changes
+  useEffect(() => {
+    if (!authenticated) {
+      setMessages([]);
+      clearCanvas();
+    }
+  }, [authenticated, clearCanvas]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -86,10 +122,14 @@ const ChatInterface = () => {
     <div className="flex flex-col h-full w-[400px] min-w-[400px]">
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4">
-        {messages.length === 0 ? (
+        {isLoadingHistory ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D179]"></div>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <h1 className="text-xl text-gray-700 font-normal">
-              What can I help with?
+              {currentCanvasId ? "No messages yet" : "What can I help with?"}
             </h1>
           </div>
         ) : (

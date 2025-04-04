@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { usePrivy, useLogout } from '@privy-io/react-auth';
 import { createUser } from '../../services/api';
+import { useCanvas } from '../../contexts/CanvasContext';
 
 const AuthButton = () => {
   const { login, ready, authenticated, user } = usePrivy();
+  const { clearCanvas } = useCanvas();
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -11,6 +13,7 @@ const AuthButton = () => {
   const { logout } = useLogout({
     onSuccess: () => {
       console.log('Successfully logged out');
+      clearCanvas(); // Clear canvas context on logout
       setShowDropdown(false);
       // Clear any local state if needed
       localStorage.removeItem('username');

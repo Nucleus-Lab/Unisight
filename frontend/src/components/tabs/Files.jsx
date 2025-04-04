@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { getUserCanvases } from '../../services/api';
+import { useCanvas } from '../../contexts/CanvasContext';
+import { useChatContext } from '../../contexts/ChatContext';
 import CanvasCard from '../canvas/CanvasCard';
 
 const Files = () => {
   const { user, authenticated } = usePrivy();
+  const { setCurrentCanvasId } = useCanvas();
+  const { setIsChatOpen } = useChatContext();
   const [canvases, setCanvases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -67,6 +71,11 @@ const Files = () => {
     );
   }
 
+  const handleCanvasClick = (canvasId) => {
+    setCurrentCanvasId(canvasId);
+    setIsChatOpen(true); // Open the chat interface
+  };
+
   return (
     <div className="p-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -74,10 +83,7 @@ const Files = () => {
           <CanvasCard
             key={canvas.canvas_id}
             canvasId={canvas.canvas_id}
-            onClick={() => {
-              // Handle canvas selection
-              console.log('Selected canvas:', canvas.canvas_id);
-            }}
+            onClick={() => handleCanvasClick(canvas.canvas_id)}
           />
         ))}
       </div>
