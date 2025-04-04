@@ -14,9 +14,9 @@ function App() {
 
   return (
     <PrivyProvider
-      appId="your-privy-app-id" // Replace with your Privy app ID
+      appId={import.meta.env.VITE_PRIVY_APP_ID}
       config={{
-        loginMethods: ['wallet', 'email'], // Configure as needed
+        loginMethods: ['wallet', 'email'],
         appearance: {
           theme: 'light',
           accentColor: '#00D179',
