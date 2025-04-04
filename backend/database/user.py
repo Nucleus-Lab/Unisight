@@ -2,8 +2,7 @@ from datetime import datetime
 from typing import List
 from sqlalchemy import Column, Integer, String, DateTime, text
 from sqlalchemy.exc import IntegrityError
-from .models import UserDB
-from . import SessionLocal
+from backend.database.models import UserDB
 
 # Database operations for user
 def create_user(db, wallet_address: str):

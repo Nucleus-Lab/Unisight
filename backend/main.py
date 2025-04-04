@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import canvas_router, user_router, message_router, visualization_router
-from database.init_db import init_db
+from backend.routes import canvas_router, user_router, message_router, visualization_router
+from backend.database.init_db import init_db
 
 # Initialize the database
 init_db()

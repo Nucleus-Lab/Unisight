@@ -5,9 +5,9 @@ import { usePrivy } from '@privy-io/react-auth';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { sendMessage, getCanvasMessages } from '../../services/api';
 import Message from '../chat/Message';
-import PropTypes from 'prop-types';
+import Canvas from '../tabs/Canvas';
 
-const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
+const ChatInterface = () => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -16,6 +16,7 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
   const { currentCanvasId, setCurrentCanvasId, clearCanvas } = useCanvas();
   const { ready, authenticated, user, login } = usePrivy();
   const messagesEndRef = useRef(null);
+  const [activeVisualizations, setActiveVisualizations] = useState([]);
   
   console.log('Current canvas ID:', currentCanvasId);
 
@@ -106,12 +107,10 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
         }]);
       }, 1000);
 
-      // Update visualizations and switch tab
+      // If the response includes visualization IDs, update the state
       if (response.visualization_ids && Array.isArray(response.visualization_ids)) {
         console.log('ChatInterface - Setting active visualizations:', response.visualization_ids);
         setActiveVisualizations(response.visualization_ids);
-        console.log('ChatInterface - Active visualizations:', activeVisualizations);
-        setActiveTab('canvas');
       }
 
     } catch (error) {
@@ -120,6 +119,8 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
       setIsLoading(false);
     }
   };
+
+  console.log('ChatInterface - Current active visualizations:', activeVisualizations);
 
   if (!isChatOpen) {
     return null;
@@ -205,13 +206,9 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
           </form>
         </div>
       </div>
+      <Canvas visualizationIds={activeVisualizations} />
     </div>
   );
-};
-
-ChatInterface.propTypes = {
-  setActiveTab: PropTypes.func.isRequired,
-  setActiveVisualizations: PropTypes.func.isRequired,
 };
 
 export default ChatInterface; 

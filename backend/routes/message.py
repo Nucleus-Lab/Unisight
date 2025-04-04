@@ -1,13 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database import get_db
-from database.user import get_user, create_user
-from database.canvas import get_canvas, create_canvas
-
+from backend.database import get_db
+from backend.database.user import get_user, create_user
+from backend.database.canvas import get_canvas, create_canvas
+from backend.database.visualization import create_visualization
 from typing import Optional, List
 from pydantic import BaseModel
 from datetime import datetime
-from database.message import create_message, get_messages_for_canvas
+from backend.database.message import create_message, get_messages_for_canvas
+
+from archive.visualization import generate_gpt_chart
 
 router = APIRouter()
 
@@ -15,14 +17,22 @@ class MessageRequest(BaseModel):
     canvas_id: Optional[int] = None
     wallet_address: str  # Changed from user_id
     text: str
-
+    
+    
 class MessageResponse(BaseModel):
     message_id: int
     canvas_id: int
     text: str
     created_at: datetime
 
-@router.post("/message", response_model=MessageResponse)
+class MessageResponseWithVisualizationIds(BaseModel):
+    message_id: int
+    canvas_id: int
+    text: str
+    created_at: datetime
+    visualization_ids: List[int]
+    
+@router.post("/message", response_model=MessageResponseWithVisualizationIds)
 async def send_message(
     message: MessageRequest,
     db: Session = Depends(get_db)
@@ -60,12 +70,28 @@ async def send_message(
             text=message.text
         )
         
+        # TODO: Add logic to interact with AI
+        # assume we got the json data from the AI
+        json_data = []
+        json_data.append(generate_gpt_chart())
+        
+        print("json_data: ", json_data)
+        
+        visualization_ids = []
+        for json in json_data:
+            # Save the json visualization to the database
+            visualization = create_visualization(db, canvas.canvas_id, json)
+            visualization_ids.append(visualization.visualization_id)
+            
+        print("visualization_ids: ", visualization_ids)
+            
         # Make sure the response includes the canvas_id
         return {
             "message_id": new_message.message_id,
             "canvas_id": canvas.canvas_id,  # Include the canvas_id here
             "text": new_message.text,
-            "created_at": new_message.created_at
+            "created_at": new_message.created_at,
+            "visualization_ids": visualization_ids
         }
 
     except Exception as e:

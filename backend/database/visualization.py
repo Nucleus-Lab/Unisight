@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
-from .models import VisualizationDB
+from backend.database.models import VisualizationDB
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL)
@@ -20,6 +20,11 @@ def create_visualization(db, canvas_id: int, json_data: str):
     db.commit()
     db.refresh(new_visualization)
     return new_visualization
+
+def get_visualization_by_id(db, visualization_id: int) -> VisualizationDB:
+    return db.query(VisualizationDB)\
+        .filter(VisualizationDB.visualization_id == visualization_id)\
+        .first()
 
 def get_visualizations_for_canvas(db, canvas_id: int) -> List[VisualizationDB]:
     return db.query(VisualizationDB)\

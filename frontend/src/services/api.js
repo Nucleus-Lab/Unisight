@@ -108,4 +108,52 @@ export const getCanvasMessages = async (canvasId) => {
     console.error('Error fetching messages:', error);
     throw error;
   }
+};
+
+export const getVisualization = async (visualizationId) => {
+  console.log(`API - Starting fetch for visualization ${visualizationId}`);
+  
+  try {
+    const response = await fetch(`${BACKEND_API_BASE_URL}/visualization/${visualizationId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log(`API - Response status for visualization ${visualizationId}:`, response.status);
+
+    // Log the raw response text first
+    const responseText = await response.text();
+    console.log(`API - Raw response for visualization ${visualizationId}:`, responseText);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}, body: ${responseText}`);
+    }
+
+    // Try to parse the text as JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+      console.log(`API - Parsed visualization ${visualizationId} data:`, data);
+    } catch (parseError) {
+      console.error(`API - JSON parsing error for visualization ${visualizationId}:`, {
+        error: parseError,
+        receivedText: responseText.substring(0, 200) + '...' // Show first 200 chars
+      });
+      throw parseError;
+    }
+
+    return {
+      id: visualizationId,
+      data: data
+    };
+  } catch (error) {
+    console.error(`API - Error fetching visualization ${visualizationId}:`, {
+      error: error,
+      message: error.message,
+      stack: error.stack
+    });
+    throw error;
+  }
 }; 

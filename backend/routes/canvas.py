@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database import get_db
-from database.user import get_user
-from database.canvas import get_canvases_for_user
+from backend.database import get_db
+from backend.database.user import get_user
+from backend.database.canvas import get_canvases_for_user
 
 from typing import List
 from pydantic import BaseModel

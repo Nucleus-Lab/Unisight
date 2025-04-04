@@ -6,10 +6,11 @@ import Files from './tabs/Files';
 import { useChatContext } from '../contexts/ChatContext';
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 
-const TabContent = ({ activeTab, setActiveTab }) => {
+const TabContent = ({ activeTab, setActiveTab, activeVisualizations }) => {
   const { isChatOpen, setIsChatOpen } = useChatContext();
 
-  console.log('Rendering TabContent, active tab:', activeTab);
+  console.log('TabContent - Active tab:', activeTab);
+  console.log('TabContent - Active visualizations:', activeVisualizations);
 
   const tabs = [
     { id: 'canvas', label: 'Canvas' },
@@ -18,9 +19,11 @@ const TabContent = ({ activeTab, setActiveTab }) => {
   ];
 
   const renderContent = () => {
+    console.log('TabContent - Rendering content for tab:', activeTab);
     switch (activeTab) {
       case 'canvas':
-        return <Canvas />;
+        console.log('TabContent - Rendering Canvas with visualizations:', activeVisualizations);
+        return <Canvas visualizationIds={activeVisualizations} />;
       case 'files':
         return <Files />;
     //   case 'history':

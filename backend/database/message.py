@@ -2,10 +2,10 @@ import os
 from typing import List, Optional
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from database import get_db
+from backend.database import get_db
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
-from .models import MessageDB
+from backend.database.models import MessageDB
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL)

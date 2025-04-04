@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Navbar from './components/layout/Navbar'
 import ChatInterface from './components/layout/ChatInterface'
 import TabContent from './components/TabContent'
@@ -10,8 +10,15 @@ import './App.css'
 
 function App() {
   const [activeTab, setActiveTab] = useState('canvas')
+  const [activeVisualizations, setActiveVisualizations] = useState([])
   
-  console.log('Current active tab:', activeTab) // Debugging log
+  // Add effect to log state changes
+  useEffect(() => {
+    console.log('App - Active visualizations updated:', activeVisualizations);
+  }, [activeVisualizations]);
+
+  console.log('App - Active tab:', activeTab)
+  console.log('App - Active visualizations:', activeVisualizations)
 
   return (
     <PrivyProvider
@@ -32,10 +39,17 @@ function App() {
             
             {/* Main Content */}
             <div className="flex flex-col md:flex-row flex-1 min-h-0">
-              <ChatInterface />
+              <ChatInterface 
+                setActiveTab={setActiveTab}
+                setActiveVisualizations={setActiveVisualizations}
+              />
               {/* Right Side - Tab Content */}
               <div className="flex-1 min-w-0">
-                <TabContent activeTab={activeTab} setActiveTab={setActiveTab} />
+                <TabContent 
+                  activeTab={activeTab} 
+                  setActiveTab={setActiveTab}
+                  activeVisualizations={activeVisualizations}
+                />
               </div>
             </div>
 

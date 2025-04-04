@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List
 from sqlalchemy import Column, Integer, String, DateTime, text, ForeignKey
 from sqlalchemy.exc import IntegrityError
-from .models import CanvasDB
+from backend.database.models import CanvasDB
 
 # Database operations for canvas
 def create_canvas(db, user_id: int):
