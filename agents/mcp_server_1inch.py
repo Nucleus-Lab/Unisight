@@ -124,8 +124,8 @@ def get_address_events(
         response.raise_for_status()
         result = response.json()
         
-        # Return the API response directly, preserving the original structure
-        return result
+        # Return only the result field from the API response
+        return result.get("result", [])
     except requests.exceptions.RequestException as e:
         raise Exception(f"API request failed: {str(e)}")
     except json.JSONDecodeError:
@@ -186,14 +186,13 @@ def get_portfolio_protocols_value_by_account(blockchain: str = "ethereum", addre
         response.raise_for_status()
         result = response.json()
         
-        # Return the API response directly, preserving the original structure
-        return result
+        # Return only the result field from the API response
+        return result.get("result", [])
     except requests.exceptions.RequestException as e:
         raise Exception(f"API request failed: {str(e)}")
     except json.JSONDecodeError:
         raise Exception("Failed to parse API response")
-    
-    
+
 
 @mcp.tool()
 def get_portfolio_protocol_profit_and_loss_by_account(
@@ -265,8 +264,8 @@ def get_portfolio_protocol_profit_and_loss_by_account(
         response.raise_for_status()
         result = response.json()
         
-        # Return the API response directly, preserving the original structure
-        return result
+        # Return only the result field from the API response
+        return result.get("result", [])
     except requests.exceptions.RequestException as e:
         raise Exception(f"API request failed: {str(e)}")
     except json.JSONDecodeError:
@@ -343,8 +342,8 @@ def get_portfolio_token_profit_and_loss_by_account(
         response.raise_for_status()
         result = response.json()
         
-        # Return the API response directly, preserving the original structure
-        return result
+        # Return only the result field from the API response
+        return result.get("result", [])
     except requests.exceptions.RequestException as e:
         raise Exception(f"API request failed: {str(e)}")
     except json.JSONDecodeError:
@@ -410,8 +409,8 @@ def get_general_current_value_by_address(
         response.raise_for_status()
         result = response.json()
         
-        # Return the API response directly, preserving the original structure
-        return result
+        # Return only the result field from the API response
+        return result.get("result", [])
     except requests.exceptions.RequestException as e:
         raise Exception(f"API request failed: {str(e)}")
     except json.JSONDecodeError:
@@ -488,8 +487,8 @@ def get_general_profit_and_loss_by_address(
         response.raise_for_status()
         result = response.json()
         
-        # Return the API response directly, preserving the original structure
-        return result
+        # Return only the result field from the API response
+        return result.get("result", [])
     except requests.exceptions.RequestException as e:
         raise Exception(f"API request failed: {str(e)}")
     except json.JSONDecodeError:
@@ -566,8 +565,8 @@ def get_general_value_chart_by_address(
         response.raise_for_status()
         result = response.json()
         
-        # Return the API response directly, preserving the original structure
-        return result
+        # Return only the result field from the API response
+        return result.get("result", [])
     except requests.exceptions.RequestException as e:
         raise Exception(f"API request failed: {str(e)}")
     except json.JSONDecodeError:
