@@ -21,6 +21,7 @@ async def get_canvas_first_visualization(
     db: Session = Depends(get_db)
 ):
     visualizations = get_visualizations_for_canvas(db, canvas_id)
+    print("visualizations in get_canvas_first_visualization: ", visualizations)
     if not visualizations:
         return None
     return visualizations[0]
@@ -46,7 +47,7 @@ async def get_visualization(
             )
             
         # Log the data being sent
-        print(f"Sending visualization data: {visualization.json_data}")
+        # print(f"Sending visualization data: {visualization.json_data}")
         
         return JSONResponse(
             content=visualization.json_data,

@@ -30,3 +30,9 @@ def get_messages_for_canvas(db, canvas_id: int):
         .filter(MessageDB.canvas_id == canvas_id)\
         .order_by(MessageDB.created_at.asc())\
         .all()
+        
+def get_message_by_id(db, message_id: int):
+    return db.query(MessageDB)\
+        .filter(MessageDB.message_id == message_id)\
+        .first()
+

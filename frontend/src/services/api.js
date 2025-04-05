@@ -101,6 +101,8 @@ export const getCanvasMessages = async (canvasId) => {
   try {
     const response = await fetch(`${BACKEND_API_BASE_URL}/canvas/${canvasId}/messages`);
     
+    console.log('Response from getCanvasMessages:', response);
+
     if (!response.ok) {
       throw new Error('Failed to fetch messages');
     }
@@ -156,6 +158,32 @@ export const getVisualization = async (visualizationId) => {
       message: error.message,
       stack: error.stack
     });
+    throw error;
+  }
+};
+
+export const getMessage = async (messageId) => {
+  try {
+    console.log(`Fetching message with ID: ${messageId}`);
+    const response = await fetch(`${BACKEND_API_BASE_URL}/message/${messageId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log('Response from getMessage:', response);
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to fetch message');
+    }
+
+    const data = await response.json();
+    console.log('Message data:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching message:', error);
     throw error;
   }
 }; 

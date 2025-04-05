@@ -3,9 +3,10 @@ import { useChatContext } from '../../contexts/ChatContext';
 import { useCanvas } from '../../contexts/CanvasContext';
 import { usePrivy } from '@privy-io/react-auth';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { sendMessage, getCanvasMessages } from '../../services/api';
+import { sendMessage, getCanvasMessages, getMessage } from '../../services/api';
 import Message from '../chat/Message';
 import PropTypes from 'prop-types';
+import { AI_USER_ID } from '../../constants/constants';
 
 const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
   const [message, setMessage] = useState('');
@@ -35,10 +36,16 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
         setIsLoadingHistory(true);
         try {
           const history = await getCanvasMessages(currentCanvasId);
+          console.log('Message history:', history);
+          // for the first message, log the data type of the user_id
+          console.log('First message user_id:', history[0].user_id);
+          console.log('First message user_id type:', typeof history[0].user_id);
+          console.log('AI_USER_ID:', AI_USER_ID);
+          console.log('AI_USER_ID type:', typeof AI_USER_ID);
           setMessages(history.map(msg => ({
             id: msg.message_id,
             text: msg.text,
-            isUser: true, // Adjust based on your message structure
+            isUser: parseInt(msg.user_id) !== AI_USER_ID, // Check if the message is from AI
             timestamp: msg.created_at
           })));
         } catch (error) {
@@ -69,56 +76,107 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
       return;
     }
 
+    const userMessage = message;
+    setMessage(''); // Clear input immediately
     setIsLoading(true);
+
     try {
-      console.log('Sending message with canvas ID:', currentCanvasId);
-      const response = await sendMessage({
-        walletAddress: user.wallet.address,
-        canvasId: currentCanvasId,
-        text: message
-      });
-
-      console.log('Response from server:', response);
-
-      if (!currentCanvasId) {
-        console.log('Setting new canvas ID:', response.canvas_id);
-        setCurrentCanvasId(response.canvas_id);
-      }
-
-      // Add the new message to the messages array
+      // Add user message immediately
       setMessages(prev => [...prev, {
-        id: response.message_id,
-        text: message,
+        id: Date.now(), // Temporary ID
+        text: userMessage,
         isUser: true,
         timestamp: new Date().toISOString()
       }]);
 
-      setMessage('');
-      console.log('Message sent successfully:', response);
+      // Show AI is typing
+      setMessages(prev => [...prev, {
+        id: 'typing',
+        text: '',
+        isUser: false,
+        isTyping: true
+      }]);
 
-      // Simulate AI response (replace this with actual AI response)
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          id: Date.now(),
-          text: "This is a simulated AI response. Replace this with actual AI response.",
+      // Send message and get response
+      const response = await sendMessage({
+        walletAddress: user.wallet.address,
+        canvasId: currentCanvasId,
+        text: userMessage
+      });
+
+      if (!currentCanvasId) {
+        setCurrentCanvasId(response.canvas_id);
+      }
+
+      // Remove typing indicator and add AI response
+      setMessages(prev => {
+        const withoutTyping = prev.filter(msg => msg.id !== 'typing');
+        return [...withoutTyping, {
+          id: response.ai_message_id,
+          text: response.ai_message_text, // Assuming this is in the response
           isUser: false,
-          timestamp: new Date().toISOString()
-        }]);
-      }, 1000);
+          timestamp: response.created_at
+        }];
+      });
 
-      // Update visualizations and switch tab
-      if (response.visualization_ids && Array.isArray(response.visualization_ids)) {
-        console.log('ChatInterface - Setting active visualizations:', response.visualization_ids);
+      // Handle visualizations if any
+      if (response.visualization_ids?.length > 0) {
         setActiveVisualizations(response.visualization_ids);
-        console.log('ChatInterface - Active visualizations:', activeVisualizations);
         setActiveTab('canvas');
       }
 
     } catch (error) {
       console.error('Failed to send message:', error);
+      // Remove typing indicator and show error
+      setMessages(prev => {
+        const withoutTyping = prev.filter(msg => msg.id !== 'typing');
+        return [...withoutTyping, {
+          id: Date.now(),
+          text: "Failed to get response. Please try again.",
+          isUser: false,
+          timestamp: new Date().toISOString(),
+          isError: true
+        }];
+      });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Update the Message component to handle error messages
+  const renderMessages = () => {
+    if (isLoadingHistory) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D179]"></div>
+        </div>
+      );
+    }
+
+    if (messages.length === 0) {
+      return (
+        <div className="h-full flex items-center justify-center">
+          <h1 className="text-xl text-gray-700 font-normal">
+            {currentCanvasId ? "No messages yet" : "What can I help with?"}
+          </h1>
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-full">
+        {messages.map((msg) => (
+          <Message
+            key={msg.id}
+            text={msg.text}
+            isUser={msg.isUser}
+            timestamp={msg.timestamp}
+            isError={msg.isError}
+          />
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+    );
   };
 
   if (!isChatOpen) {
@@ -131,29 +189,7 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
     <div className="flex flex-col h-full w-[400px] min-w-[400px]">
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4">
-        {isLoadingHistory ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D179]"></div>
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center">
-            <h1 className="text-xl text-gray-700 font-normal">
-              {currentCanvasId ? "No messages yet" : "What can I help with?"}
-            </h1>
-          </div>
-        ) : (
-          <div className="w-full">
-            {messages.map((msg) => (
-              <Message
-                key={msg.id}
-                text={msg.text}
-                isUser={msg.isUser}
-                timestamp={msg.timestamp}
-              />
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
+        {renderMessages()}
       </div>
 
       {/* Input Area */}
