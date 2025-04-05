@@ -6,7 +6,7 @@ import Files from './tabs/Files';
 import { useChatContext } from '../contexts/ChatContext';
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 
-const TabContent = ({ activeTab, setActiveTab, activeVisualizations }) => {
+const TabContent = ({ activeTab, setActiveTab, activeVisualizations, setActiveVisualizations }) => {
   const { isChatOpen, setIsChatOpen } = useChatContext();
 
   console.log('TabContent - Active tab:', activeTab);
@@ -23,7 +23,14 @@ const TabContent = ({ activeTab, setActiveTab, activeVisualizations }) => {
     switch (activeTab) {
       case 'canvas':
         console.log('TabContent - Rendering Canvas with visualizations:', activeVisualizations);
-        return <Canvas visualizationIds={activeVisualizations} />;
+        return (
+          <div className="h-full overflow-y-auto">
+            <Canvas 
+              visualizationIds={activeVisualizations} 
+              setActiveVisualizations={setActiveVisualizations}
+            />
+          </div>
+        );
       case 'files':
         return <Files />;
     //   case 'history':

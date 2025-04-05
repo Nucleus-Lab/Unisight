@@ -1,13 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import VisualizationCard from '../visualization/VisualizationCard';
 import { getVisualization, getCanvasVisualizations } from '../../services/api';
 import { useCanvas } from '../../contexts/CanvasContext';
 
-const Canvas = ({ visualizationIds = [] }) => {
+const Canvas = ({ visualizationIds = [], setActiveVisualizations }) => {
   const { currentCanvasId } = useCanvas();
   const [visualizations, setVisualizations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const bottomRef = useRef(null);
+
+  // Add auto-scroll effect
+  useEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [visualizations]);
 
   useEffect(() => {
     const fetchVisualizations = async () => {
@@ -37,6 +45,17 @@ const Canvas = ({ visualizationIds = [] }) => {
             id: viz.visualization_id,
             data: viz.json_data
           }));
+          
+          // Set these visualizations as active visualizations
+          if (setActiveVisualizations && canvasVisualizations.length > 0) {
+            const canvasVizIds = canvasVisualizations.map(viz => viz.visualization_id);
+            console.log('Canvas - Setting active visualizations from canvas:', canvasVizIds);
+            setActiveVisualizations(prev => {
+              // Only add new visualization IDs that aren't already in the list
+              const newVizIds = canvasVizIds.filter(id => !prev.includes(id));
+              return [...prev, ...newVizIds];
+            });
+          }
         }
 
         console.log('Canvas - Visualization results:', results);
@@ -56,7 +75,7 @@ const Canvas = ({ visualizationIds = [] }) => {
       setLoading(false);
       setVisualizations([]);
     }
-  }, [visualizationIds, currentCanvasId]); // Add currentCanvasId to dependencies
+  }, [visualizationIds, currentCanvasId, setActiveVisualizations]); // Add setActiveVisualizations to dependencies
 
   if (loading) {
     return (
@@ -83,13 +102,14 @@ const Canvas = ({ visualizationIds = [] }) => {
   }
 
   return (
-    <div className="flex flex-col w-full space-y-6 p-4">
+    <div className="flex flex-col w-full space-y-6 p-4 overflow-y-auto">
       {visualizations.map((visualization, index) => (
         <VisualizationCard
           key={`viz-${visualization.id || index}`}
           plotData={visualization.data}
         />
       ))}
+      <div ref={bottomRef} /> {/* Add ref for auto-scrolling */}
     </div>
   );
 };

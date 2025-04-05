@@ -49,6 +49,7 @@ function App() {
                   activeTab={activeTab} 
                   setActiveTab={setActiveTab}
                   activeVisualizations={activeVisualizations}
+                  setActiveVisualizations={setActiveVisualizations}
                 />
               </div>
             </div>

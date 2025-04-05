@@ -143,7 +143,12 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
 
       // Handle visualizations if any
       if (response.visualization_ids?.length > 0) {
-        setActiveVisualizations(response.visualization_ids);
+        console.log('ChatInterface - Adding new visualizations:', response.visualization_ids);
+        setActiveVisualizations(prev => {
+          const newVisualizations = [...prev, ...response.visualization_ids];
+          console.log('ChatInterface - Updated visualization list:', newVisualizations);
+          return newVisualizations;
+        });
         setActiveTab('canvas');
       }
 
