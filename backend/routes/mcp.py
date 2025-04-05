@@ -13,8 +13,9 @@ class MCPServer(BaseModel):
 
 # Available MCP servers
 MCP_SERVERS = [
-    MCPServer(name="nodit", description="Nodit Blockchain Data API"),
-    MCPServer(name="1inch", description="1inch DEX API")
+    MCPServer(name="nodit", description="Nodit API"),
+    MCPServer(name="1inch", description="1inch API"),
+    MCPServer(name="zircuit", description="Zircuit API")
 ]
 
 @router.get("/mcp/servers", response_model=List[MCPServer])

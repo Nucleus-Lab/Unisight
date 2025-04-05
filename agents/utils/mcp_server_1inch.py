@@ -85,7 +85,7 @@ def get_address_events(
     if chain_id is None:
         # Validate and get chain ID from blockchain name
         chain_id = CHAIN_IDS.get(blockchain.lower())
-        if chain_id is None:  # Changed from 'if not chain_id' to be more explicit
+        if not chain_id:
             raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of: {', '.join(CHAIN_IDS.keys())}")
     
     # Limit the limit parameter
@@ -133,7 +133,7 @@ def get_address_events(
 
 
 @mcp.tool()
-def get_portfolio_protocols_value_by_account(blockchain: str = "ethereum", addresses: List[str] = None, chain_id: int = None, use_cache: bool = True) -> Dict[str, Any]:
+def get_portfolio_protocols_value_by_account(blockchain: str = None, addresses: List[str] = None, chain_id: int = None, use_cache: bool = True) -> Dict[str, Any]:
     """
     Get the current asset value in different protocols for specified wallet addresses.
     
@@ -196,7 +196,7 @@ def get_portfolio_protocols_value_by_account(blockchain: str = "ethereum", addre
 
 @mcp.tool()
 def get_portfolio_protocol_profit_and_loss_by_account(
-    blockchain: str = "ethereum", 
+    blockchain: str = None, 
     addresses: List[str] = None, 
     chain_id: int = None,
     timerange: str = None,
@@ -215,15 +215,6 @@ def get_portfolio_protocol_profit_and_loss_by_account(
     Returns:
         Profit and loss information for the specified wallet addresses in different protocols
     """
-    
-    # Determine chain ID - either use provided chain_id or look up from blockchain name
-    if chain_id is None:
-        print("chain_id is None")
-        # Validate and get chain ID from blockchain name
-        chain_id = CHAIN_IDS.get(blockchain.lower())
-        if not chain_id:
-            raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of: {', '.join(CHAIN_IDS.keys())}")
-        
     if not addresses:
         raise ValueError("addresses is required")
     
@@ -231,6 +222,13 @@ def get_portfolio_protocol_profit_and_loss_by_account(
     valid_timeranges = ["1day", "1week", "1month", "1year", "3years"]
     if timerange and timerange not in valid_timeranges:
         raise ValueError(f"Invalid timerange: {timerange}. Must be one of: {', '.join(valid_timeranges)}")
+    
+    # Determine chain ID - either use provided chain_id or look up from blockchain name
+    if chain_id is None:
+        # Validate and get chain ID from blockchain name
+        chain_id = CHAIN_IDS.get(blockchain.lower())
+        if not chain_id:
+            raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of: {', '.join(CHAIN_IDS.keys())}")
     
     # Build API URL
     url = f"{PORTFOLIO_BASE_URL}/overview/protocols/profit_and_loss"
@@ -276,7 +274,7 @@ def get_portfolio_protocol_profit_and_loss_by_account(
 
 @mcp.tool()
 def get_portfolio_token_profit_and_loss_by_account(
-    blockchain: str = "ethereum", 
+    blockchain: str = None, 
     addresses: List[str] = None, 
     chain_id: int = None,
     timerange: str = None,
@@ -354,7 +352,7 @@ def get_portfolio_token_profit_and_loss_by_account(
 
 @mcp.tool()
 def get_general_current_value_by_address(
-    blockchain: str = "ethereum", 
+    blockchain: str = None, 
     addresses: List[str] = None, 
     chain_id: int = None,
     use_cache: bool = True
@@ -421,7 +419,7 @@ def get_general_current_value_by_address(
 
 @mcp.tool()
 def get_general_profit_and_loss_by_address(
-    blockchain: str = "ethereum", 
+    blockchain: str = None, 
     addresses: List[str] = None, 
     chain_id: int = None,
     timerange: str = None,
@@ -499,7 +497,7 @@ def get_general_profit_and_loss_by_address(
 
 @mcp.tool()
 def get_general_value_chart_by_address(
-    blockchain: str = "ethereum", 
+    blockchain: str = None, 
     addresses: List[str] = None, 
     chain_id: int = None,
     timerange: str = None,
@@ -518,38 +516,29 @@ def get_general_value_chart_by_address(
     Returns:
         Value chart data for the specified wallet addresses, including timestamps and values
     """
-    logger.info(f"Starting get_general_value_chart_by_address with params: blockchain={blockchain}, addresses={addresses}, chain_id={chain_id}, timerange={timerange}")
-    
     if not addresses:
-        logger.error("No addresses provided")
         raise ValueError("addresses is required")
     
     # Validate timerange if provided
     valid_timeranges = ["1day", "1week", "1month", "1year", "3years"]
     if timerange and timerange not in valid_timeranges:
-        logger.error(f"Invalid timerange provided: {timerange}")
         raise ValueError(f"Invalid timerange: {timerange}. Must be one of: {', '.join(valid_timeranges)}")
     
     # Determine chain ID - either use provided chain_id or look up from blockchain name
     if chain_id is None:
-        logger.info(f"No chain_id provided, looking up from blockchain name: {blockchain}")
         # Validate and get chain ID from blockchain name
         chain_id = CHAIN_IDS.get(blockchain.lower())
         if not chain_id:
-            logger.error(f"Unsupported blockchain: {blockchain}")
             raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of: {', '.join(CHAIN_IDS.keys())}")
-        logger.info(f"Found chain_id: {chain_id} for blockchain: {blockchain}")
     
     # Build API URL
     url = f"{PORTFOLIO_BASE_URL}/general/value_chart"
-    logger.info(f"API URL: {url}")
     
     # Set request headers
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Accept": "application/json"
     }
-    logger.debug("Headers set (excluding Authorization token)")
     
     # Set request parameters
     params = {
@@ -557,16 +546,13 @@ def get_general_value_chart_by_address(
         "chain_id": chain_id,
         "use_cache": use_cache
     }
-    logger.info(f"Request parameters: {params}")
     
     # Add optional timerange parameter if provided
     if timerange:
         params["timerange"] = timerange
-        logger.info(f"Added timerange parameter: {timerange}")
     
     try:
         # Send request
-        logger.info("Sending API request...")
         response = requests.get(url, headers=headers, params=params)
         
         # Check for HTTP errors
@@ -574,34 +560,100 @@ def get_general_value_chart_by_address(
             # Handle validation errors
             error_data = response.json()
             error_message = error_data.get("message", "Request parameter validation error")
-            logger.error(f"API validation error: {error_message}")
-            logger.error(f"Full error response: {error_data}")
             raise ValueError(f"API validation error: {error_message}")
         
         response.raise_for_status()
-        logger.info(f"API request successful. Status code: {response.status_code}")
-        
         result = response.json()
-        logger.info("Successfully parsed JSON response")
         
         # Return only the result field from the API response
-        final_result = result.get("result", [])
-        logger.info(f"Number of results returned: {len(final_result)}")
-        return final_result
+        return result.get("result", [])
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"API request failed: {str(e)}")
+    except json.JSONDecodeError:
+        raise Exception("Failed to parse API response")
+
+
+@mcp.tool()
+def get_token_price_history(
+    token0_address: str = None,
+    token1_address: str = None,
+    blockchain: str = None,
+    chain_id: int = None,
+    granularity: str = None,
+    limit: int = 100
+) -> List[Dict[str, Any]]:
+    """
+    Get historical price data for a token pair.
+    
+    Args:
+        token0_address: The address of the first token (required)
+        token1_address: The address of the second token (required)
+        blockchain: Blockchain network (ethereum, optimism, polygon, binance, arbitrum, avalanche, gnosis, fantom, aurora, klaytn, zksync, base, linea, mantle)
+        chain_id: Direct chain ID value (alternative to blockchain parameter)
+        granularity: Granularity of time series (month, week, day, 4hour, hour, 15min, 5min)
+        limit: Number of data points to return (max: 1000)
         
+    Returns:
+        List of price data points for the token pair
+    """
+    if not token0_address:
+        raise ValueError("token0_address is required")
+    
+    if not token1_address:
+        raise ValueError("token1_address is required")
+    
+    # Determine chain ID
+    if chain_id is None:
+        if blockchain not in CHAIN_IDS:
+            raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of {list(CHAIN_IDS.keys())}")
+        chain_id = CHAIN_IDS[blockchain]
+    
+    # Valid granularity values
+    valid_granularities = [
+        "month", 
+        "week", 
+        "day", 
+        "4hour", 
+        "hour", 
+        "15min", 
+        "5min"
+    ]
+    
+    if granularity not in valid_granularities:
+        raise ValueError(f"Invalid granularity: {granularity}. Must be one of {valid_granularities}")
+    
+    # Ensure limit is within acceptable range
+    if limit <= 0 or limit > 1000:
+        raise ValueError("Limit must be between 1 and 1000")
+    
+    url = "https://api.1inch.dev/portfolio/integrations/prices/v1/time_range/cross_prices"
+    
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {API_KEY}"
+    }
+    
+    params = {
+        "token0_address": token0_address,
+        "token1_address": token1_address,
+        "chain_id": chain_id,
+        "granularity": granularity,
+        "limit": limit
+    }
+    
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        result = response.json()
+        
+        # Return the data directly
+        return result
     except requests.exceptions.RequestException as e:
         logger.error(f"API request failed: {str(e)}")
-        logger.error(f"Request URL: {url}")
-        logger.error(f"Request params: {params}")
         raise Exception(f"API request failed: {str(e)}")
     except json.JSONDecodeError:
         logger.error("Failed to parse API response")
-        logger.error(f"Response content: {response.text[:500]}...")  # Log first 500 chars of response
         raise Exception("Failed to parse API response")
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        logger.exception("Full traceback:")
-        raise
 
 # Run the server
 if __name__ == "__main__":
