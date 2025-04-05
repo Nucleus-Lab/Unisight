@@ -177,8 +177,8 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
 
     if (messages.length === 0) {
       return (
-        <div className="h-full flex items-center justify-center">
-          <h1 className="text-xl text-gray-700 font-normal">
+        <div className="flex items-center justify-center">
+          <h1 className="text-xl text-gray-700 font-normal mt-48">
             {currentCanvasId ? "No messages yet" : "What can I help with?"}
           </h1>
         </div>
@@ -211,7 +211,7 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
   return (
     <div className="flex flex-col h-full w-[400px] min-w-[400px]">
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-2">
         <div className="border-b bg-white p-4 flex justify-between items-center">
           <MCPSelector />
         </div>

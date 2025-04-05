@@ -70,3 +70,14 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.overflow-wrap-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  -ms-word-break: break-all;
+  word-wrap: break-word;
+  -ms-hyphens: auto;
+  -moz-hyphens: auto;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
