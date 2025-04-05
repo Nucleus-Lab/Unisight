@@ -17,12 +17,6 @@ const VisualizationCard = ({ plotData }) => {
           'No data array found'
       });
 
-      // Verify the data structure is correct for Plotly
-      if (!parsedData?.data || !Array.isArray(parsedData.data)) {
-        console.error('VisualizationCard - Invalid data structure:', parsedData);
-        return null;
-      }
-
       return parsedData;
     } catch (error) {
       console.error('VisualizationCard - Error parsing plot data:', error);

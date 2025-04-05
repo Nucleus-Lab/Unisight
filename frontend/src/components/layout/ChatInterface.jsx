@@ -7,6 +7,7 @@ import { sendMessage, getCanvasMessages, getMessage } from '../../services/api';
 import Message from '../chat/Message';
 import PropTypes from 'prop-types';
 import { AI_USER_ID } from '../../constants/constants';
+import MCPSelector from '../MCPSelector';
 
 const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
   const [message, setMessage] = useState('');
@@ -211,6 +212,9 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
     <div className="flex flex-col h-full w-[400px] min-w-[400px]">
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4">
+        <div className="border-b bg-white p-4 flex justify-between items-center">
+          <MCPSelector />
+        </div>
         {renderMessages()}
       </div>
 

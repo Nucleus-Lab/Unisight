@@ -186,4 +186,60 @@ export const getMessage = async (messageId) => {
     console.error('Error fetching message:', error);
     throw error;
   }
+};
+
+export const getMCPServers = async () => {
+  try {
+    const response = await fetch(`${BACKEND_API_BASE_URL}/mcp/servers`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch MCP servers');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching MCP servers:', error);
+    throw error;
+  }
+};
+
+export const getCurrentMCP = async () => {
+  try {
+    const response = await fetch(`${BACKEND_API_BASE_URL}/mcp/current`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch current MCP server');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching current MCP server:', error);
+    throw error;
+  }
+};
+
+export const selectMCPServer = async (serverName) => {
+  try {
+    const response = await fetch(`${BACKEND_API_BASE_URL}/mcp/select/${serverName}`, {
+      method: 'POST',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to select MCP server');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error selecting MCP server:', error);
+    throw error;
+  }
+};
+
+export const getCanvasVisualizations = async (canvasId) => {
+  try {
+    const response = await fetch(`${BACKEND_API_BASE_URL}/canvas/${canvasId}/visualizations`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch canvas visualizations');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching canvas visualizations:', error);
+    throw error;
+  }
 }; 
