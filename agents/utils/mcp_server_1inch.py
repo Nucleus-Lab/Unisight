@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # 从环境变量获取 API 密钥
-API_KEY = os.getenv("1INCH_API_KEY")
+API_KEY = os.getenv("ONEINCH_API_KEY")
 if not API_KEY:
-    logger.error("1INCH_API_KEY 环境变量未设置")
+    logger.error("ONEINCH_API_KEY 环境变量未设置")
     # 为测试目的，我们将继续使用虚拟密钥而不是抛出错误
     API_KEY = "dummy_key_for_testing"
     logger.warning("使用测试用的虚拟 API 密钥")

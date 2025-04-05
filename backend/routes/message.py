@@ -163,6 +163,29 @@ async def send_message(
             second_ai_results = await agent_main(prompt)
             ai_message_text = second_ai_results["analysis"]
                 
+        elif results["action"] == "USE_WEBHOOK":
+            # Handle webhook results
+            webhook_results = results.get("webhook_results", {})
+            
+            if webhook_results.get("success"):
+                # If there's a message from the AI, use that
+                if "message" in webhook_results:
+                    ai_message_text = webhook_results["message"]
+                else:
+                    # Format the webhook tool results into a readable message
+                    tool_results = webhook_results.get("results", [])
+                    result_messages = []
+                    for tool_result in tool_results:
+                        tool_name = tool_result.get("tool", "unknown tool")
+                        result = tool_result.get("result", {})
+                        result_messages.append(f"Executed {tool_name}. Result: {result}")
+                        if "webhook_id" in result:
+                            result_messages.append(f"Webhook ID: {result['webhook_id']}")
+                    
+                    ai_message_text = "\n".join(result_messages)
+            else:
+                ai_message_text = f"Failed to execute webhook operation: {webhook_results.get('error', 'Unknown error')}"
+                
         else:
             raise HTTPException(status_code=400, detail="Invalid action")
             

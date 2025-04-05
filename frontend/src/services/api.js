@@ -243,4 +243,36 @@ export const getCanvasVisualizations = async (canvasId) => {
     console.error('Error fetching canvas visualizations:', error);
     throw error;
   }
+};
+
+export const getWebhookEvents = async () => {
+  try {
+    console.log('Fetching webhook events...');
+    const response = await fetch(`${BACKEND_API_BASE_URL}/api/webhook/events`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('Webhook events fetched:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching webhook events:', error);
+    throw error;
+  }
+};
+
+export const getLatestWebhookEvent = async () => {
+  try {
+    console.log('Fetching latest webhook event...');
+    const response = await fetch(`${BACKEND_API_BASE_URL}/api/webhook/nodit/latest`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('Latest webhook event:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching latest webhook event:', error);
+    throw error;
+  }
 }; 

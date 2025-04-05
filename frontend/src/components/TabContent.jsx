@@ -1,6 +1,7 @@
 import React from 'react';
 import Canvas from './tabs/Canvas';
 import Files from './tabs/Files';
+import WebhookTab from './tabs/WebhookTab';
 // TODO: check if history is needed
 // import History from './tabs/History';
 import { useChatContext } from '../contexts/ChatContext';
@@ -15,6 +16,7 @@ const TabContent = ({ activeTab, setActiveTab, activeVisualizations, setActiveVi
   const tabs = [
     { id: 'canvas', label: 'Canvas' },
     { id: 'files', label: 'Files' },
+    { id: 'webhook', label: 'Webhook' },
     // { id: 'history', label: 'History' },
   ];
 
@@ -33,6 +35,8 @@ const TabContent = ({ activeTab, setActiveTab, activeVisualizations, setActiveVi
         );
       case 'files':
         return <Files />;
+      case 'webhook':
+        return <WebhookTab />;
     //   case 'history':
     //     return <History />;
       default:

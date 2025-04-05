@@ -24,6 +24,15 @@ def convert_to_schema(model: ToolBase) -> Dict[str, Any]:
     return function_calling_json
 
 
+class USE_WEBHOOK(ToolBase):
+    """Use webhook, trigger when user's query want to use webhook to do something"""
+
+    tool_name: str = Field(
+        ...,
+        description="The name of the tool to use",
+    )
+
+
 class ANALYZE_GRAPH(ToolBase):
     """Analyze the graph based on user's query, trigger when user's query is about analyzing the graph provided"""
     
@@ -79,6 +88,7 @@ ACTION_LIST = [
         RETRIEVE_AND_VISUALIZE_INFORMATION,
         MODIFY_VISUALIZATION,
         GENERAL_CHAT,
+        USE_WEBHOOK,
     ]
 ]
 

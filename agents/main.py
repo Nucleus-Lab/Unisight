@@ -7,6 +7,7 @@ from agents.pipelines.visualization_pipeline import VisualizationPipeline
 from agents.pipelines.analysis_pipeline import AnalysisPipeline
 from agents.pipelines.modifier_pipeline import ModifierPipeline
 from agents.modules.router import ActionRouter, ACTION_LIST
+from agents.modules.webhook_monitor import WebhookMonitorAgent
 
 async def main(
     prompt: str, 
@@ -28,7 +29,7 @@ async def main(
     lm = dspy.LM(model=model, api_key=os.getenv("OPENAI_API_KEY"))
     dspy.configure(lm=lm)
     
-    # Initialize pipelines
+    # Initialize pipelines and agents
     analysis_pipeline = AnalysisPipeline()
     await analysis_pipeline.initialize()
         
@@ -38,8 +39,14 @@ async def main(
     modifier_pipeline = ModifierPipeline()
     await modifier_pipeline.initialize()
     
+    webhook_agent = WebhookMonitorAgent()
+    await webhook_agent.initialize_tools()
+    
     # Add available mcp tools in visualization pipeline to the prompt
     prompt = prompt + "\n\nAvailable MCP tools in RETRIEVE_AND_VISUALIZE_INFORMATION: " + ", ".join([tool.name for tool in visualization_pipeline.retriever.tools])
+    
+    # Add available mcp tools in webhook agent to the prompt
+    prompt = prompt + "\n\nAvailable MCP tools in USE_WEBHOOK: " + ", ".join([tool.name for tool in webhook_agent.tools])
     
     # Add information about mentioned visualizations to the prompt if any
     if mentioned_visualizations and len(mentioned_visualizations) > 0:
@@ -119,6 +126,12 @@ async def main(
                     "success": False,
                     "error": result.get("error", "Unknown error")
                 })
+        results["action"] = action
+    elif action == "USE_WEBHOOK":
+        # Handle webhook tool usage
+        results = {"webhook_results": None}
+        result = await webhook_agent.execute_tool_by_prompt(prompt)
+        results["webhook_results"] = result
         results["action"] = action
     else:
         # GENERAL_CHAT

@@ -565,6 +565,8 @@ def create_webhook(
         response.raise_for_status()
         result = response.json()
         
+        logger.info("result in create_webhook: %s", result)
+        
         # Return the webhook details
         return result
     except requests.exceptions.RequestException as e:
