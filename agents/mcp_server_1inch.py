@@ -133,7 +133,7 @@ def get_address_events(
 
 
 @mcp.tool()
-def get_portfolio_protocols_value_by_account(blockchain: str = "ethereum", addresses: List[str] = None, chain_id: int = None, use_cache: bool = True) -> Dict[str, Any]:
+def get_portfolio_protocols_value_by_account(blockchain: str = None, addresses: List[str] = None, chain_id: int = None, use_cache: bool = True) -> Dict[str, Any]:
     """
     Get the current asset value in different protocols for specified wallet addresses.
     
@@ -196,7 +196,7 @@ def get_portfolio_protocols_value_by_account(blockchain: str = "ethereum", addre
 
 @mcp.tool()
 def get_portfolio_protocol_profit_and_loss_by_account(
-    blockchain: str = "ethereum", 
+    blockchain: str = None, 
     addresses: List[str] = None, 
     chain_id: int = None,
     timerange: str = None,
@@ -274,7 +274,7 @@ def get_portfolio_protocol_profit_and_loss_by_account(
 
 @mcp.tool()
 def get_portfolio_token_profit_and_loss_by_account(
-    blockchain: str = "ethereum", 
+    blockchain: str = None, 
     addresses: List[str] = None, 
     chain_id: int = None,
     timerange: str = None,
@@ -352,7 +352,7 @@ def get_portfolio_token_profit_and_loss_by_account(
 
 @mcp.tool()
 def get_general_current_value_by_address(
-    blockchain: str = "ethereum", 
+    blockchain: str = None, 
     addresses: List[str] = None, 
     chain_id: int = None,
     use_cache: bool = True
@@ -419,7 +419,7 @@ def get_general_current_value_by_address(
 
 @mcp.tool()
 def get_general_profit_and_loss_by_address(
-    blockchain: str = "ethereum", 
+    blockchain: str = None, 
     addresses: List[str] = None, 
     chain_id: int = None,
     timerange: str = None,
@@ -497,7 +497,7 @@ def get_general_profit_and_loss_by_address(
 
 @mcp.tool()
 def get_general_value_chart_by_address(
-    blockchain: str = "ethereum", 
+    blockchain: str = None, 
     addresses: List[str] = None, 
     chain_id: int = None,
     timerange: str = None,
@@ -570,6 +570,89 @@ def get_general_value_chart_by_address(
     except requests.exceptions.RequestException as e:
         raise Exception(f"API request failed: {str(e)}")
     except json.JSONDecodeError:
+        raise Exception("Failed to parse API response")
+
+
+@mcp.tool()
+def get_token_price_history(
+    token0_address: str = None,
+    token1_address: str = None,
+    blockchain: str = None,
+    chain_id: int = None,
+    granularity: str = None,
+    limit: int = 100
+) -> List[Dict[str, Any]]:
+    """
+    Get historical price data for a token pair.
+    
+    Args:
+        token0_address: The address of the first token (required)
+        token1_address: The address of the second token (required)
+        blockchain: Blockchain network (ethereum, optimism, polygon, binance, arbitrum, avalanche, gnosis, fantom, aurora, klaytn, zksync, base, linea, mantle)
+        chain_id: Direct chain ID value (alternative to blockchain parameter)
+        granularity: Granularity of time series (month, week, day, 4hour, hour, 15min, 5min)
+        limit: Number of data points to return (max: 1000)
+        
+    Returns:
+        List of price data points for the token pair
+    """
+    if not token0_address:
+        raise ValueError("token0_address is required")
+    
+    if not token1_address:
+        raise ValueError("token1_address is required")
+    
+    # Determine chain ID
+    if chain_id is None:
+        if blockchain not in CHAIN_IDS:
+            raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of {list(CHAIN_IDS.keys())}")
+        chain_id = CHAIN_IDS[blockchain]
+    
+    # Valid granularity values
+    valid_granularities = [
+        "month", 
+        "week", 
+        "day", 
+        "4hour", 
+        "hour", 
+        "15min", 
+        "5min"
+    ]
+    
+    if granularity not in valid_granularities:
+        raise ValueError(f"Invalid granularity: {granularity}. Must be one of {valid_granularities}")
+    
+    # Ensure limit is within acceptable range
+    if limit <= 0 or limit > 1000:
+        raise ValueError("Limit must be between 1 and 1000")
+    
+    url = "https://api.1inch.dev/portfolio/integrations/prices/v1/time_range/cross_prices"
+    
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {API_KEY}"
+    }
+    
+    params = {
+        "token0_address": token0_address,
+        "token1_address": token1_address,
+        "chain_id": chain_id,
+        "granularity": granularity,
+        "limit": limit
+    }
+    
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        result = response.json()
+        
+        # Return the data directly
+        return result
+    except requests.exceptions.RequestException as e:
+        logger.error(f"API request failed: {str(e)}")
+        raise Exception(f"API request failed: {str(e)}")
+    except json.JSONDecodeError:
+        logger.error("Failed to parse API response")
         raise Exception("Failed to parse API response")
 
 # Run the server
