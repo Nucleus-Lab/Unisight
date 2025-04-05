@@ -279,12 +279,16 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
 
   return (
     <div className="flex flex-col h-full w-[400px] min-w-[400px]">
+      {/* Fixed MCP Selector Header */}
+      <div className="border-b bg-white p-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
+        <MCPSelector />
+      </div>
+
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto p-2">
-        <div className="border-b bg-white p-4 flex justify-between items-center">
-          <MCPSelector />
+      <div className="flex-1 overflow-y-auto">
+        <div className="w-full">
+          {renderMessages()}
         </div>
-        {renderMessages()}
       </div>
 
       {/* Input Area */}
