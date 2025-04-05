@@ -794,6 +794,201 @@ def get_webhook_history(
         raise Exception("Failed to parse API response")
 
 
+@mcp.tool()
+def get_daily_transaction_stats(
+    blockchain: str = "ethereum", 
+    network: str = "mainnet",
+    start_date: str = None,
+    end_date: str = None
+) -> Dict[str, Any]:
+    """
+    Get daily transaction statistics for a specific blockchain.
+    
+    Args:
+        blockchain: The blockchain to query (ethereum, arbitrum, optimism, base, polygon, avalanche)
+        network: The network to query (mainnet or sepolia)
+        start_date: Start date for the query in YYYY-MM-DD format (max 100 days from start to end)
+        end_date: End date for the query in YYYY-MM-DD format (max 100 days from start to end)
+        
+    Returns:
+        Daily transaction count statistics
+    """
+    if blockchain not in BLOCKCHAINS:
+        raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of {BLOCKCHAINS}")
+    
+    if network not in NETWORKS:
+        raise ValueError(f"Unsupported network: {network}. Must be one of {NETWORKS}")
+    
+    # Default to current date if not provided
+    if not start_date:
+        # Get date from 30 days ago
+        from datetime import datetime, timedelta
+        start_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    
+    if not end_date:
+        # Get current date
+        from datetime import datetime
+        end_date = datetime.now().strftime("%Y-%m-%d")
+    
+    url = f"{BASE_URL}/{blockchain}/{network}/stats/getDailyTransactionsStats"
+    
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "X-API-KEY": API_KEY
+    }
+    
+    # Prepare the request payload
+    payload = {
+        "startDate": start_date,
+        "endDate": end_date
+    }
+    
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        result = response.json()
+        
+        # Return the items array directly
+        return result.get("items", [])
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"API request failed: {str(e)}")
+    except json.JSONDecodeError:
+        raise Exception("Failed to parse API response")
+
+
+@mcp.tool()
+def get_daily_active_accounts_stats_by_contract(
+    blockchain: str = "ethereum", 
+    network: str = "mainnet",
+    contract_address: str = None,
+    start_date: str = None,
+    end_date: str = None
+) -> List[Dict[str, Any]]:
+    """
+    Get daily active account statistics for a specific contract.
+    
+    Args:
+        blockchain: The blockchain to query (ethereum, arbitrum, optimism, base, polygon, avalanche)
+        network: The network to query (mainnet or sepolia)
+        contract_address: The address of the contract to get statistics for
+        start_date: Start date for the query in YYYY-MM-DD format (max 100 days from start to end)
+        end_date: End date for the query in YYYY-MM-DD format (max 100 days from start to end)
+        
+    Returns:
+        Daily active account statistics for the specified contract
+    """
+    if not contract_address:
+        raise ValueError("contract_address is required")
+    
+    if blockchain not in BLOCKCHAINS:
+        raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of {BLOCKCHAINS}")
+    
+    if network not in NETWORKS:
+        raise ValueError(f"Unsupported network: {network}. Must be one of {NETWORKS}")
+    
+    # Default to current date if not provided
+    if not start_date:
+        # Get date from 30 days ago
+        from datetime import datetime, timedelta
+        start_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    
+    if not end_date:
+        # Get current date
+        from datetime import datetime
+        end_date = datetime.now().strftime("%Y-%m-%d")
+    
+    url = f"{BASE_URL}/{blockchain}/{network}/stats/getDailyActiveAccountsStatsByContract"
+    
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "X-API-KEY": API_KEY
+    }
+    
+    # Prepare the request payload
+    payload = {
+        "contractAddress": contract_address,
+        "startDate": start_date,
+        "endDate": end_date
+    }
+    
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        result = response.json()
+        
+        # Return the items array directly
+        return result.get("items", [])
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"API request failed: {str(e)}")
+    except json.JSONDecodeError:
+        raise Exception("Failed to parse API response")
+
+
+@mcp.tool()
+def get_daily_active_accounts_stats(
+    blockchain: str = "ethereum", 
+    network: str = "mainnet",
+    start_date: str = None,
+    end_date: str = None
+) -> List[Dict[str, Any]]:
+    """
+    Get daily active account statistics for a blockchain.
+    
+    Args:
+        blockchain: The blockchain to query (ethereum, arbitrum, optimism, base, polygon, avalanche)
+        network: The network to query (mainnet or sepolia)
+        start_date: Start date for the query in YYYY-MM-DD format (max 100 days from start to end)
+        end_date: End date for the query in YYYY-MM-DD format (max 100 days from start to end)
+        
+    Returns:
+        Daily active account statistics for the blockchain
+    """
+    if blockchain not in BLOCKCHAINS:
+        raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of {BLOCKCHAINS}")
+    
+    if network not in NETWORKS:
+        raise ValueError(f"Unsupported network: {network}. Must be one of {NETWORKS}")
+    
+    # Default to current date if not provided
+    if not start_date:
+        # Get date from 30 days ago
+        from datetime import datetime, timedelta
+        start_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    
+    if not end_date:
+        # Get current date
+        from datetime import datetime
+        end_date = datetime.now().strftime("%Y-%m-%d")
+    
+    url = f"{BASE_URL}/{blockchain}/{network}/stats/getDailyActiveAccountsStats"
+    
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "X-API-KEY": API_KEY
+    }
+    
+    # Prepare the request payload
+    payload = {
+        "startDate": start_date,
+        "endDate": end_date
+    }
+    
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        result = response.json()
+        
+        # Return the items array directly
+        return result.get("items", [])
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"API request failed: {str(e)}")
+    except json.JSONDecodeError:
+        raise Exception("Failed to parse API response")
+
+
 # Run the server
 if __name__ == "__main__":
     # Log server startup
