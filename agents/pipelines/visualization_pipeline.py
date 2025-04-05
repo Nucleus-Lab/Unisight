@@ -94,6 +94,8 @@ class VisualizationPipeline:
             return result    
         except Exception as e:
             error_msg = f"Failed to generate visualization: {str(e)}"
+            import traceback
+            traceback.print_exc()
             print(f"[ERROR] {error_msg}")
             return {
                 "success": False,
