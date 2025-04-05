@@ -83,6 +83,8 @@ export const getCanvasFirstMessage = async (canvasId) => {
 export const getCanvasFirstVisualization = async (canvasId) => {
   try {
     const response = await fetch(`${BACKEND_API_BASE_URL}/canvas/${canvasId}/first-visualization`);
+
+    console.log('Response from getCanvasFirstVisualization:', response);
     
     if (!response.ok) {
       throw new Error('Failed to fetch first visualization');
