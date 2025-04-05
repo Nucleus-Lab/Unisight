@@ -230,7 +230,7 @@ async def test_with_openai():
                     
                     # Get the result as a string
                     print("Processing tool result...")
-                    import pdb; pdb.set_trace()
+                    # import pdb; pdb.set_trace()
                     # Convert result to string for OpenAI
                     try:
                         # Try to get a string representation that OpenAI can use

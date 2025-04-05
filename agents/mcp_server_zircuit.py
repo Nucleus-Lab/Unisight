@@ -31,7 +31,7 @@ VALID_MONTHS = ["1", "3", "6", "12"]
 #############################
 
 @mcp.tool()
-def get_daily_metrics(period: str = "30") -> Dict[str, Any]:
+def get_daily_metrics(period: str = None) -> Dict[str, Any]:
     """
     Get daily metrics for the specified period.
     
