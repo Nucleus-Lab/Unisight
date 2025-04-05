@@ -85,7 +85,7 @@ def get_address_events(
     if chain_id is None:
         # Validate and get chain ID from blockchain name
         chain_id = CHAIN_IDS.get(blockchain.lower())
-        if not chain_id:
+        if chain_id is None:  # Changed from 'if not chain_id' to be more explicit
             raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of: {', '.join(CHAIN_IDS.keys())}")
     
     # Limit the limit parameter
@@ -215,6 +215,15 @@ def get_portfolio_protocol_profit_and_loss_by_account(
     Returns:
         Profit and loss information for the specified wallet addresses in different protocols
     """
+    
+    # Determine chain ID - either use provided chain_id or look up from blockchain name
+    if chain_id is None:
+        print("chain_id is None")
+        # Validate and get chain ID from blockchain name
+        chain_id = CHAIN_IDS.get(blockchain.lower())
+        if not chain_id:
+            raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of: {', '.join(CHAIN_IDS.keys())}")
+        
     if not addresses:
         raise ValueError("addresses is required")
     
@@ -222,13 +231,6 @@ def get_portfolio_protocol_profit_and_loss_by_account(
     valid_timeranges = ["1day", "1week", "1month", "1year", "3years"]
     if timerange and timerange not in valid_timeranges:
         raise ValueError(f"Invalid timerange: {timerange}. Must be one of: {', '.join(valid_timeranges)}")
-    
-    # Determine chain ID - either use provided chain_id or look up from blockchain name
-    if chain_id is None:
-        # Validate and get chain ID from blockchain name
-        chain_id = CHAIN_IDS.get(blockchain.lower())
-        if not chain_id:
-            raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of: {', '.join(CHAIN_IDS.keys())}")
     
     # Build API URL
     url = f"{PORTFOLIO_BASE_URL}/overview/protocols/profit_and_loss"
@@ -516,29 +518,38 @@ def get_general_value_chart_by_address(
     Returns:
         Value chart data for the specified wallet addresses, including timestamps and values
     """
+    logger.info(f"Starting get_general_value_chart_by_address with params: blockchain={blockchain}, addresses={addresses}, chain_id={chain_id}, timerange={timerange}")
+    
     if not addresses:
+        logger.error("No addresses provided")
         raise ValueError("addresses is required")
     
     # Validate timerange if provided
     valid_timeranges = ["1day", "1week", "1month", "1year", "3years"]
     if timerange and timerange not in valid_timeranges:
+        logger.error(f"Invalid timerange provided: {timerange}")
         raise ValueError(f"Invalid timerange: {timerange}. Must be one of: {', '.join(valid_timeranges)}")
     
     # Determine chain ID - either use provided chain_id or look up from blockchain name
     if chain_id is None:
+        logger.info(f"No chain_id provided, looking up from blockchain name: {blockchain}")
         # Validate and get chain ID from blockchain name
         chain_id = CHAIN_IDS.get(blockchain.lower())
         if not chain_id:
+            logger.error(f"Unsupported blockchain: {blockchain}")
             raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of: {', '.join(CHAIN_IDS.keys())}")
+        logger.info(f"Found chain_id: {chain_id} for blockchain: {blockchain}")
     
     # Build API URL
     url = f"{PORTFOLIO_BASE_URL}/general/value_chart"
+    logger.info(f"API URL: {url}")
     
     # Set request headers
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Accept": "application/json"
     }
+    logger.debug("Headers set (excluding Authorization token)")
     
     # Set request parameters
     params = {
@@ -546,13 +557,16 @@ def get_general_value_chart_by_address(
         "chain_id": chain_id,
         "use_cache": use_cache
     }
+    logger.info(f"Request parameters: {params}")
     
     # Add optional timerange parameter if provided
     if timerange:
         params["timerange"] = timerange
+        logger.info(f"Added timerange parameter: {timerange}")
     
     try:
         # Send request
+        logger.info("Sending API request...")
         response = requests.get(url, headers=headers, params=params)
         
         # Check for HTTP errors
@@ -560,17 +574,34 @@ def get_general_value_chart_by_address(
             # Handle validation errors
             error_data = response.json()
             error_message = error_data.get("message", "Request parameter validation error")
+            logger.error(f"API validation error: {error_message}")
+            logger.error(f"Full error response: {error_data}")
             raise ValueError(f"API validation error: {error_message}")
         
         response.raise_for_status()
+        logger.info(f"API request successful. Status code: {response.status_code}")
+        
         result = response.json()
+        logger.info("Successfully parsed JSON response")
         
         # Return only the result field from the API response
-        return result.get("result", [])
+        final_result = result.get("result", [])
+        logger.info(f"Number of results returned: {len(final_result)}")
+        return final_result
+        
     except requests.exceptions.RequestException as e:
+        logger.error(f"API request failed: {str(e)}")
+        logger.error(f"Request URL: {url}")
+        logger.error(f"Request params: {params}")
         raise Exception(f"API request failed: {str(e)}")
     except json.JSONDecodeError:
+        logger.error("Failed to parse API response")
+        logger.error(f"Response content: {response.text[:500]}...")  # Log first 500 chars of response
         raise Exception("Failed to parse API response")
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        logger.exception("Full traceback:")
+        raise
 
 # Run the server
 if __name__ == "__main__":

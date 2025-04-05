@@ -6,6 +6,7 @@ from pathlib import Path
 from openai import OpenAI
 import importlib
 import asyncio
+from typing import List, Dict
 
 from agents.utils.format_utils import format_obj, flatten_json
 
@@ -68,8 +69,6 @@ class MCPRetrieverAgent:
         try:
             self.tools = await self.mcp.list_tools()
             
-            print("tools: ", self.tools)
-            
             # Convert MCP tools to OpenAI format
             self.openai_tools = []
             for tool in self.tools:
@@ -97,20 +96,34 @@ class MCPRetrieverAgent:
         safe_prompt = "".join(c if c.isalnum() else "_" for c in prompt[:50]).rstrip("_")
         return f"{timestamp}_{safe_prompt}.json"
 
-    async def retrieve_by_prompt(self, prompt: str) -> dict:
+    async def retrieve_by_prompt(self, prompt: str, conversation_history: List[Dict[str, str]] = None) -> dict:
         """
         Process a prompt, execute tools, and save results to a JSON file
+        
+        Args:
+            prompt: The user's prompt
+            conversation_history: List of previous conversation messages
         """
         try:
             logger.info(f"Processing prompt: {prompt}")
+            logger.info(f"Conversation history length: {len(conversation_history) if conversation_history else 0}")
             
-            # Add user prompt to conversation history
-            self.conversation_history.append({"role": "user", "content": prompt})
+            # Initialize or update conversation history
+            if conversation_history:
+                # Start with system prompt
+                messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+                # Add conversation history
+                messages.extend(conversation_history)
+            else:
+                messages = self.conversation_history.copy()
+            
+            # Add current prompt to messages
+            messages.append({"role": "user", "content": prompt})
             
             # Get OpenAI's tool selection
             response = self.client.chat.completions.create(
                 model=os.getenv("MODEL_NAME"),
-                messages=self.conversation_history,
+                messages=messages,
                 tools=self.openai_tools,
                 tool_choice="auto",
                 timeout=30
@@ -145,7 +158,6 @@ class MCPRetrieverAgent:
                                 result = func(**args)
                             logger.info(f"Tool execution successful: {tool_name}")
                             
-                            # TODO: double check this again
                             # Format and flatten each item
                             flattened_items = []
                             for item in result:
@@ -154,6 +166,19 @@ class MCPRetrieverAgent:
                                 flattened_items.append(flattened_item)
                             
                             result = flattened_items
+                            
+                            # Add tool response to conversation history
+                            messages.append({
+                                "role": "assistant",
+                                "content": None,
+                                "tool_calls": [{"id": tool_call.id, "type": "function", "function": {"name": tool_name, "arguments": json.dumps(args)}}]
+                            })
+                            messages.append({
+                                "role": "tool",
+                                "content": json.dumps(result),
+                                "tool_call_id": tool_call.id
+                            })
+                            
                         else:
                             error_msg = f"Tool {tool_name} not found in available tools"
                             logger.error(error_msg)

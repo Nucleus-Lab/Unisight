@@ -1,6 +1,6 @@
 import dspy
 import logging
-from typing import Optional
+from typing import Optional, List, Dict
 from agents.modules.figure_analyzer import FigureAnalyzerAgent
 
 class AnalysisPipeline:
@@ -40,21 +40,25 @@ class AnalysisPipeline:
             logger = logging.getLogger(logger_name)
             logger.setLevel(logging.CRITICAL + 1)
         
-    async def analyze_figures(self, image_paths: list[str], prompt: str = "Please analyze the figure and provide a detailed description of the figure."):
+    async def analyze_figures(self, image_paths: list[str], prompt: str = "Please analyze the figure and provide a detailed description of the figure.", conversation_history: List[Dict[str, str]] = None):
         """Analyze multiple images using OpenAI Vision API"""
         if not self.is_initialized:
             raise RuntimeError("Pipeline not initialized. Call initialize() first")
+            
+        if conversation_history is None:
+            conversation_history = []
         
         try:
             print(f"\n=== Analyzing figures for prompt: {prompt} ===")
+            print(f"Conversation history: {conversation_history}")
             
-            # TODO: after added planner, prompt and task prompt should be different, no longer a list here
-            
-            # Call the analysis function    
-            analysis = self.figure_analyzer.analyze_figures(image_paths, prompt[0])
+            # Call the analysis function with conversation history    
+            analysis = self.figure_analyzer.analyze_figures(image_paths, prompt, conversation_history)
             print(f"[INFO] Analysis complete: {analysis}")
             
-            return analysis
+            return {
+                "analysis": analysis
+                }
         
         except Exception as e:
             error_msg = f"Failed to analyze figures: {str(e)}"

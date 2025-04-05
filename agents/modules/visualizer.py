@@ -5,6 +5,7 @@ import dspy
 import pandas as pd
 import kaleido
 import re
+from typing import List, Dict
 
 class Visualizer(dspy.Signature):
     """
@@ -20,8 +21,10 @@ class Visualizer(dspy.Signature):
     2. Only use columns that are available in the data! Avoid keyerror!
     3. When u plot wallet address or contract address, only show the first 4 and last 4 characters, with ellipsis in the middle because they are too long.
     4. No need to use fig.show() in the plot code, just return the plot code.
-    4. If the data is token balances or similar, you should get the decimals of the contract from the data and then convert the balance to the token's decimal so that the visualization scale is easier to understand.
-    4. If there are timestamp data in the json data and you want to use it, you should convert the timestamp to a human readable date and time, remember to use unit='s' when converting the timestamp to a datetime object.
+    5. If the data is token balances or similar, you should get the decimals of the contract from the data and then convert the balance to the token's decimal so that the visualization scale is easier to understand.
+    6. If there are timestamp data in the json data and you want to use it, you should convert the timestamp to a human readable date and time, remember to use unit='s' when converting the timestamp to a datetime object.
+    7. Use encoding='utf-8' when reading the json file.
+    8. Cannot accept list of column references or list of columns for both `x` and `y` in the plot code.
     """
 
     prompt = dspy.InputField(prefix="User's prompt:")
@@ -40,21 +43,38 @@ class VisualizerAgent:
         self.visualize = dspy.Predict(Visualizer, max_tokens=16000)
         
     def visualize_by_prompt(
-        self, prompt: str, task: str, file_path: str, output_png_path: str
+        self, prompt: str, task: str, file_path: str, output_png_path: str, conversation_history: List[Dict[str, str]] = None
     ):
+        """
+        Generate visualization based on prompt and data
+        
+        Args:
+            prompt: The user's prompt
+            task: The current task
+            file_path: Path to the data file
+            output_png_path: Path to save the output PNG
+            conversation_history: List of previous conversation messages
+        """
         
         # overwrite the default json.loads to use pandas.json_normalize so that large int can be read
         import simplejson
         pd.io.json._json.loads = lambda s, *a, **kw: simplejson.loads(s)
         pd.io.json._json.ujson_loads = lambda s, *a, **kw: simplejson.loads(s)
-        # pd.io.json._json.loads = lambda s, *a, **kw: pd.json_normalize(simplejson.loads(s))
-        # pd.io.json._json.ujson_loads = lambda s, *a, **kw: pd.json_normalize(simplejson.loads(s))
         
         df = pd.read_json(file_path)
         sample_data = df.head(5)
         
         print(f"The sample data: {sample_data}")
         print(f"The column names: {sample_data.columns}")
+        print(f"Conversation history length: {len(conversation_history) if conversation_history else 0}")
+        
+        # Add conversation context to the prompt if available
+        if conversation_history:
+            context = "\n\nPrevious conversation context:\n"
+            for msg in conversation_history[-3:]:  # Only use last 3 messages for context
+                role = "User" if msg["role"] == "user" else "Assistant"
+                context += f"{role}: {msg['content']}\n"
+            prompt = prompt + context
         
         response = self.visualize(
             prompt=prompt,
@@ -81,40 +101,71 @@ class VisualizerAgent:
                 'file_path': file_path  # Also provide the file path
             }
             
-            # append this to the point after the imports in the plot_code
-            # find the point after the imports in the plot_code
-            # imports_index = plot_code.find("import")
-            # if imports_index != -1:
-            #     plot_code_before_imports = plot_code[:imports_index]
-            #     plot_code_after_imports = plot_code[imports_index:]
-                
-            # print(f"The plot code before imports: {plot_code_before_imports}")
-            # print(f"The plot code after imports: {plot_code_after_imports}")
+            # Execute the code in the namespace with retry logic
+            max_retries = 3
+            retry_count = 0
+            last_error = None
             
-            # PD_JSON_OVERWRITE_CODE = """\nimport simplejson; pd.io.json._json.loads = lambda s, *a, **kw: simplejson.loads(s); pd.io.json._json.ujson_loads = lambda s, *a, **kw: simplejson.loads(s);\n"""
-            # PD_JSON_OVERWRITE_CODE = """\nimport simplejson; pd.io.json._json.loads = lambda s, *a, **kw: pd.json_normalize(simplejson.loads(s)); pd.io.json._json.ujson_loads = lambda s, *a, **kw: pd.json_normalize(simplejson.loads(s));\n"""
-            # plot_code = plot_code_before_imports + PD_JSON_OVERWRITE_CODE + plot_code_after_imports
-            
-            # Execute the code in the namespace
-            exec(plot_code, namespace)
-            
-            # Get the figure from the namespace
-            if 'fig' not in namespace:
-                raise ValueError("Plot code did not create a 'fig' variable")
-            
-            fig = namespace['fig']
-            print("[INFO] Successfully created plotly figure")
-            
-            # Convert to JSON
-            fig_json = fig.to_json()
-            print("[INFO] Successfully converted figure to JSON")
-            
-            # Save the figure to the output png path
-            fig.write_image(output_png_path)
-            print(f"[INFO] Successfully saved figure to {output_png_path}")
-            
-            return fig_json
-            
+            while retry_count < max_retries:
+                try:
+                    # Execute the code in the namespace
+                    exec(plot_code, namespace)
+                    
+                    # Get the figure from the namespace
+                    if 'fig' not in namespace:
+                        raise ValueError("Plot code did not create a 'fig' variable")
+                    
+                    fig = namespace['fig']
+                    print("[INFO] Successfully created plotly figure")
+                    
+                    # Convert to JSON
+                    fig_json = fig.to_json()
+                    print("[INFO] Successfully converted figure to JSON")
+                    
+                    # Save the figure to the output png path
+                    fig.write_image(output_png_path)
+                    print(f"[INFO] Successfully saved figure to {output_png_path}")
+                    
+                    return fig_json
+                    
+                except Exception as e:
+                    last_error = e
+                    retry_count += 1
+                    print(f"[ERROR] Attempt {retry_count}/{max_retries} failed: {str(e)}")
+                    import traceback
+                    error_traceback = traceback.format_exc()
+                    print(f"[ERROR] Traceback:\n{error_traceback}")
+                    print(f"[ERROR] Plot code that failed:\n{plot_code}")
+                    
+                    if retry_count < max_retries:
+                        # Prepare error context for the AI
+                        error_context = f"""
+The plot code failed with the following error:
+Error: {str(e)}
+Traceback:
+{error_traceback}
+
+Please fix the code and try again. Here's the code that failed:
+{plot_code}
+"""
+                        # Get fixed code from the AI
+                        response = self.visualize(
+                            prompt=error_context,
+                            task="Fix the plotting code based on the error message",
+                            file_path=file_path,
+                            sample_data=sample_data,
+                        )
+                        plot_code = response.plot_code
+                        print(f"[INFO] Retrying with fixed code:\n{plot_code}")
+                        
+                        # Clean up the code again
+                        plot_code = re.sub(r"```python\s*", "", plot_code)
+                        plot_code = re.sub(r"```\s*", "", plot_code)
+                        
+                    else:
+                        print("[ERROR] Max retries reached. Raising last error.")
+                        raise last_error
+                    
         except Exception as e:
             print(f"[ERROR] Failed to create plot: {str(e)}")
             import traceback

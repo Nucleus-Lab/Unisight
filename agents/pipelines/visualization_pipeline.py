@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional
+from typing import Optional, List, Dict
 import dspy
 from pathlib import Path
 
@@ -64,14 +64,17 @@ class VisualizationPipeline:
         )
         dspy.configure(lm=lm)
             
-    async def generate_visualization(self, prompt: str):
+    async def generate_visualization(self, prompt: str, conversation_history: List[Dict[str, str]] = None):
         """Generate visualization for a given prompt"""
         if not self.is_initialized:
             raise RuntimeError("Pipeline not initialized. Call initialize() first")
             
+        if conversation_history is None:
+            conversation_history = []
+            
         try:
             print(f"\n=== Retrieving data for task: {prompt} ===")
-            result = await self.retriever.retrieve_by_prompt(prompt)
+            result = await self.retriever.retrieve_by_prompt(prompt, conversation_history)
             
             print(f"Status: {result['success']}")
             print(f"Json file path: {result['file_path']}")
@@ -84,7 +87,7 @@ class VisualizationPipeline:
             result["output_png_path"] = output_png_path
             
             if result["success"]:
-                fig_json = self.visualizer.visualize_by_prompt(prompt, prompt, result["file_path"], output_png_path)
+                fig_json = self.visualizer.visualize_by_prompt(prompt, prompt, result["file_path"], output_png_path, conversation_history)
                 print(f"[INFO] Successfully generated visualization")
                 result["fig_json"] = fig_json
             else:

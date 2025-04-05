@@ -67,6 +67,16 @@ async def send_message(
                     detail="Not authorized to access this canvas"
                 )
         
+        # Get conversation history for this canvas
+        conversation_history = []
+        previous_messages = get_messages_for_canvas(db, canvas.canvas_id)
+        for msg in previous_messages:
+            role = "assistant" if msg.user_id == AI_USER_ID else "user"
+            conversation_history.append({
+                "role": role,
+                "content": msg.text
+            })
+        
         # Create the message
         new_message = create_message(
             db,
@@ -75,24 +85,47 @@ async def send_message(
             text=message.text
         )
         
-        visualization_results, analysis = await agent_main([message.text])
-        visualization_ids = []
-        for result in visualization_results:
-            # Parse the json data
-            json_data = json.loads(result['fig_json'])
-            # Save the json visualization to the database
-            visualization = create_visualization(db, canvas.canvas_id, json_data)
-            visualization_ids.append(visualization.visualization_id)
-            
-        print("visualization_ids: ", visualization_ids)
-        print("analysis: ", analysis)
+        # Add current message to conversation history
+        conversation_history.append({
+            "role": "user",
+            "content": message.text
+        })
         
+        results = await agent_main(message.text, conversation_history)
+        visualization_ids = []  # empty list for visualization ids
+        
+        if results["action"] == "GENERAL_CHAT":
+            ai_message_text = results["message"]
+            
+        elif results["action"] == "RETRIEVE_AND_VISUALIZE_INFORMATION":
+            visualization_results_list = results["visualization_results_list"]
+            print("visualization_results_list: ", visualization_results_list)
+            img_paths = [result["output_png_path"] for result in visualization_results_list]
+            
+            for viz_result in visualization_results_list:
+                # Parse the json data
+                json_data = json.loads(viz_result['fig_json'])
+                # Save the json visualization to the database
+                visualization = create_visualization(db, canvas.canvas_id, json_data)
+                visualization_ids.append(visualization.visualization_id)
+            
+            # call the ai agent again to get the analysis
+            prompt = "Please analyze the figures and reply the user. Here is the user's original prompt: " + message.text + ". Here is the img paths for the generated figures: " + ", ".join(img_paths)
+            second_ai_results = await agent_main(prompt)
+            ai_message_text = second_ai_results["analysis"]
+            
+        elif results["action"] == "ANALYZE_GRAPH":
+            ai_message_text = results["analysis"]
+            
+        else:
+            raise HTTPException(status_code=400, detail="Invalid action")
+            
         # Save the analysis as a message from the AI to the database
         ai_message = create_message(
             db,
             canvas_id=canvas.canvas_id,
             user_id=AI_USER_ID,
-            text=analysis
+            text=ai_message_text
         )
         
         print("sending these as response: ", {
@@ -100,7 +133,7 @@ async def send_message(
             "canvas_id": canvas.canvas_id,  # Include the canvas_id here
             "text": new_message.text,
             "created_at": new_message.created_at,
-            "visualization_ids": visualization_ids,
+            "visualization_ids": visualization_ids,  # optional TODO:
             "ai_message_id": ai_message.message_id
         })
             
