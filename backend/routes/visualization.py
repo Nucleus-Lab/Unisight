@@ -13,8 +13,9 @@ router = APIRouter()
 class VisualizationResponse(BaseModel):
     visualization_id: int
     json_data: dict
+    png_path: str
     created_at: datetime
-
+    
 @router.get("/canvas/{canvas_id}/first-visualization", response_model=Optional[VisualizationResponse])
 async def get_canvas_first_visualization(
     canvas_id: int,

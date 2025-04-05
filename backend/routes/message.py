@@ -8,7 +8,7 @@ import json
 from backend.database import get_db
 from backend.database.user import get_user, create_user
 from backend.database.canvas import get_canvas, create_canvas
-from backend.database.visualization import create_visualization
+from backend.database.visualization import create_visualization, get_visualization_by_id, update_visualization
 from backend.constants import AI_USER_ID
 from backend.database.message import create_message, get_messages_for_canvas, get_message_by_id
 
@@ -20,6 +20,7 @@ class MessageRequest(BaseModel):
     canvas_id: Optional[int] = None
     wallet_address: str  # Changed from user_id
     text: str
+    mentioned_visualization_ids: Optional[List[int]] = None
     
     
 class MessageResponse(BaseModel):
@@ -91,7 +92,29 @@ async def send_message(
             "content": message.text
         })
         
-        results = await agent_main(message.text, conversation_history)
+        # Process mentioned visualization IDs if provided
+        mentioned_visualizations = []
+        if message.mentioned_visualization_ids and len(message.mentioned_visualization_ids) > 0:
+            print(f"Processing mentioned visualization IDs: {message.mentioned_visualization_ids}")
+            for viz_id in message.mentioned_visualization_ids:
+                visualization = get_visualization_by_id(db, viz_id)
+                if visualization:
+                    mentioned_visualizations.append({
+                        "visualization_id": visualization.visualization_id,
+                        "png_path": visualization.png_path,
+                        "json_data": visualization.json_data,
+                        "file_path": visualization.file_path
+                    })
+                    print(f"Found visualization with ID {viz_id}: {visualization.png_path}")
+                else:
+                    print(f"Visualization with ID {viz_id} not found")
+        
+        # Pass mentioned visualizations to the agent
+        results = await agent_main(
+            message.text, 
+            conversation_history,
+            mentioned_visualizations=mentioned_visualizations
+        )
         visualization_ids = []  # empty list for visualization ids
         
         if results["action"] == "GENERAL_CHAT":
@@ -100,15 +123,18 @@ async def send_message(
         elif results["action"] == "RETRIEVE_AND_VISUALIZE_INFORMATION":
             visualization_results_list = results["visualization_results_list"]
             print("visualization_results_list: ", visualization_results_list)
-            img_paths = [result["output_png_path"] for result in visualization_results_list]
+            
+            img_paths = []
             
             for viz_result in visualization_results_list:
                 # Parse the json data
                 json_data = json.loads(viz_result['fig_json'])
                 # Save the json visualization to the database
-                visualization = create_visualization(db, canvas.canvas_id, json_data)
+                visualization = create_visualization(db, canvas.canvas_id, json_data, viz_result["output_png_path"], viz_result["file_path"])
                 visualization_ids.append(visualization.visualization_id)
-            
+                # To be used for analysis later
+                img_paths.append(viz_result["output_png_path"])
+                
             # call the ai agent again to get the analysis
             prompt = "Please analyze the figures and reply the user. Here is the user's original prompt: " + message.text + ". Here is the img paths for the generated figures: " + ", ".join(img_paths)
             second_ai_results = await agent_main(prompt)
@@ -117,6 +143,26 @@ async def send_message(
         elif results["action"] == "ANALYZE_GRAPH":
             ai_message_text = results["analysis"]
             
+        elif results["action"] == "MODIFY_VISUALIZATION":
+            modification_results_list = results["modification_results_list"]
+            
+            img_paths = []
+            
+            for mod_result in modification_results_list:
+                if mod_result["success"]:
+                    # Parse the json data
+                    json_data = json.loads(mod_result['fig_json'])
+                    # Save the json data to update the visualization
+                    visualization = update_visualization(db, mod_result["visualization_id"], canvas.canvas_id, json_data, mod_result["output_png_path"], mod_result["file_path"])
+                    visualization_ids.append(visualization.visualization_id)   # which is the original visualization id since this is an update
+                    # to be used for analysis later
+                    img_paths.append(mod_result["output_png_path"])
+                    
+            # call the ai agent again to get the analysis
+            prompt = "Please analyze the figure(s) and reply the user. Here is the user's original prompt: " + message.text + ". Here is the img paths for the generated figures: " + ", ".join(img_paths)
+            second_ai_results = await agent_main(prompt)
+            ai_message_text = second_ai_results["analysis"]
+                
         else:
             raise HTTPException(status_code=400, detail="Invalid action")
             

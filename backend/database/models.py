@@ -51,6 +51,8 @@ class VisualizationDB(Base):
     visualization_id = Column(Integer, primary_key=True, index=True)
     canvas_id = Column(Integer, ForeignKey("canvases.canvas_id"))
     json_data = Column(JSON)
+    png_path = Column(String)
+    file_path = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
