@@ -82,16 +82,18 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
 
     try {
       // Add user message immediately
+      const userMessageId = Date.now();
       setMessages(prev => [...prev, {
-        id: Date.now(), // Temporary ID
+        id: userMessageId,
         text: userMessage,
         isUser: true,
         timestamp: new Date().toISOString()
       }]);
 
       // Show AI is typing
+      const typingId = 'typing-' + Date.now(); // Unique ID for typing indicator
       setMessages(prev => [...prev, {
-        id: 'typing',
+        id: typingId,
         text: '',
         isUser: false,
         isTyping: true
@@ -110,13 +112,32 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
 
       // Remove typing indicator and add AI response
       setMessages(prev => {
-        const withoutTyping = prev.filter(msg => msg.id !== 'typing');
-        return [...withoutTyping, {
+        // Remove the typing indicator
+        const withoutTyping = prev.filter(msg => msg.id !== typingId);
+        
+        // Add the AI response
+        const aiMessage = {
           id: response.ai_message_id,
-          text: response.ai_message_text, // Assuming this is in the response
+          text: response.ai_message_text,
           isUser: false,
           timestamp: response.created_at
-        }];
+        };
+
+        // Get the message from the API if needed
+        if (response.ai_message_id) {
+          getMessage(response.ai_message_id)
+            .then(fullMessage => {
+              // Update the message with complete data if needed
+              setMessages(prev => prev.map(msg => 
+                msg.id === response.ai_message_id 
+                  ? { ...msg, text: fullMessage.text }
+                  : msg
+              ));
+            })
+            .catch(console.error);
+        }
+
+        return [...withoutTyping, aiMessage];
       });
 
       // Handle visualizations if any
@@ -172,6 +193,7 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
             isUser={msg.isUser}
             timestamp={msg.timestamp}
             isError={msg.isError}
+            isTyping={msg.isTyping}
           />
         ))}
         <div ref={messagesEndRef} />
