@@ -5,11 +5,9 @@ from datetime import datetime
 from pathlib import Path
 from openai import OpenAI
 import importlib
-
-# TODO: multiple MCP servers
-from agents.utils.mcp_server_nodit import mcp
-# from agents.utils.mcp_server_1inch import mcp
 import asyncio
+
+from agents.utils.format_utils import format_obj, flatten_json
 
 SYSTEM_PROMPT = """
 You are an AI assistant that can interact with blockchain data through an MCP server.
@@ -147,8 +145,7 @@ class MCPRetrieverAgent:
                                 result = func(**args)
                             logger.info(f"Tool execution successful: {tool_name}")
                             
-                            # TODO:
-                            from agents.utils.format_utils import format_obj, flatten_json
+                            # TODO: double check this again
                             # Format and flatten each item
                             flattened_items = []
                             for item in result:

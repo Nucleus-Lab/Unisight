@@ -75,7 +75,6 @@ async def send_message(
             text=message.text
         )
         
-        # TODO: Add logic to interact with AI
         visualization_results, analysis = await agent_main([message.text])
         visualization_ids = []
         for result in visualization_results:
