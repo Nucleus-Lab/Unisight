@@ -21,9 +21,9 @@ export const createUser = async (walletAddress) => {
   }
 };
 
-export const sendMessage = async ({ walletAddress, canvasId = null, text }) => {
+export const sendMessage = async ({ walletAddress, canvasId = null, text, mentionedVisualizationIds = [] }) => {
   try {
-    console.log('Sending request with:', { walletAddress, canvasId, text }); // Debug log
+    console.log('Sending request with:', { walletAddress, canvasId, text, mentionedVisualizationIds }); // Debug log
     const response = await fetch(`${BACKEND_API_BASE_URL}/message`, {
       method: 'POST',
       headers: {
@@ -32,7 +32,8 @@ export const sendMessage = async ({ walletAddress, canvasId = null, text }) => {
       body: JSON.stringify({
         wallet_address: walletAddress,
         canvas_id: canvasId,
-        text: text
+        text: text,
+        mentioned_visualization_ids: mentionedVisualizationIds
       })
     });
 

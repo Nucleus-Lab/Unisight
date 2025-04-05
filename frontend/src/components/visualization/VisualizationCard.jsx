@@ -1,8 +1,9 @@
 import React from 'react';
 import Plot from 'react-plotly.js';
 
-const VisualizationCard = ({ plotData }) => {
+const VisualizationCard = ({ plotData, visualizationId }) => {
   console.log('VisualizationCard - Raw plotData received:', plotData);
+  console.log('VisualizationCard - Visualization ID:', visualizationId);
 
   // Ensure plotData is properly formatted for Plotly
   const plotlyData = React.useMemo(() => {
@@ -43,6 +44,14 @@ const VisualizationCard = ({ plotData }) => {
 
   return (
     <div className="p-4 border rounded-lg bg-white shadow-sm">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-sm font-medium text-gray-700">
+          {plotlyData.layout?.title?.text || 'Visualization'}
+        </h3>
+        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+          ID: {visualizationId || 'N/A'}
+        </span>
+      </div>
       <Plot
         data={plotlyData.data}
         layout={{

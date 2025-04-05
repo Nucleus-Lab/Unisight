@@ -107,6 +107,7 @@ const Canvas = ({ visualizationIds = [], setActiveVisualizations }) => {
         <VisualizationCard
           key={`viz-${visualization.id || index}`}
           plotData={visualization.data}
+          visualizationId={visualization.id}
         />
       ))}
       <div ref={bottomRef} /> {/* Add ref for auto-scrolling */}

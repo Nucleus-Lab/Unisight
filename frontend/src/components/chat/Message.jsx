@@ -2,6 +2,15 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 const Message = ({ text, isUser, timestamp, isError, isTyping }) => {
+  // Function to highlight visualization mentions in the message
+  const highlightMentions = (text) => {
+    if (!text) return '';
+    return text.replace(
+      /@\s*fig:(\d+)/g, 
+      '<span class="bg-blue-100 text-blue-800 px-1 rounded">@fig:$1</span>'
+    );
+  };
+
   if (isTyping) {
     return (
       <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
@@ -23,9 +32,10 @@ const Message = ({ text, isUser, timestamp, isError, isTyping }) => {
           ? 'bg-[#00D179] text-white rounded-l-lg rounded-tr-lg' 
           : 'bg-gray-100 text-gray-800 rounded-r-lg rounded-tl-lg'
       } px-4 py-2`}>
-        <div className="text-sm whitespace-pre-wrap overflow-wrap-anywhere">
-          {text}
-        </div>
+        <div 
+          className="text-sm whitespace-pre-wrap overflow-wrap-anywhere"
+          dangerouslySetInnerHTML={{ __html: highlightMentions(text) }}
+        />
         <div className={`text-xs mt-1 ${isUser ? 'text-white/70' : 'text-gray-500'}`}>
           {timestamp ? new Date(timestamp).toLocaleTimeString() : ''}
         </div>

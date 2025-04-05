@@ -18,6 +18,7 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
   const { currentCanvasId, setCurrentCanvasId, clearCanvas } = useCanvas();
   const { ready, authenticated, user, login } = usePrivy();
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
   
   console.log('Current canvas ID:', currentCanvasId);
 
@@ -70,6 +71,18 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
     }
   }, [authenticated, clearCanvas]);
 
+  // Function to extract visualization IDs from message
+  const extractVisualizationIds = (text) => {
+    const mentionRegex = /@\s*fig:(\d+)/g;
+    const matches = [...text.matchAll(mentionRegex)];
+    return matches.map(match => parseInt(match[1]));
+  };
+
+  // Function to highlight mentions in the input
+  const highlightMentions = (text) => {
+    return text.replace(/@\s*fig:(\d+)/g, '<span class="bg-blue-100 text-blue-800 px-1 rounded">@fig:$1</span>');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -82,6 +95,10 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
     setIsLoading(true);
 
     try {
+      // Extract visualization IDs from the message
+      const mentionedVisualizationIds = extractVisualizationIds(userMessage);
+      console.log('Mentioned visualization IDs:', mentionedVisualizationIds);
+
       // Add user message immediately
       const userMessageId = Date.now();
       setMessages(prev => [...prev, {
@@ -104,7 +121,8 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
       const response = await sendMessage({
         walletAddress: user.wallet.address,
         canvasId: currentCanvasId,
-        text: userMessage
+        text: userMessage,
+        mentionedVisualizationIds: mentionedVisualizationIds
       });
 
       if (!currentCanvasId) {
@@ -229,10 +247,11 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
           <form onSubmit={handleSubmit} className="flex flex-col space-y-2">
             <div className="flex">
               <input
+                ref={inputRef}
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder={authenticated ? "Ask anything..." : "Connect wallet to start chatting..."}
+                placeholder={authenticated ? "Ask anything... (use @fig:id to reference visualizations)" : "Connect wallet to start chatting..."}
                 disabled={isDisabled}
                 className="flex-1 px-4 py-3 border rounded-l-lg focus:outline-none focus:ring-1 focus:ring-[#00D179] focus:border-[#00D179] text-base 
                   disabled:bg-gray-50 disabled:text-gray-500 disabled:border-gray-200"
