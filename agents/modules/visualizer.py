@@ -25,6 +25,7 @@ class Visualizer(dspy.Signature):
     6. If there are timestamp data in the json data and you want to use it, you should convert the timestamp to a human readable date and time, remember to use unit='s' when converting the timestamp to a datetime object.
     7. Use encoding='utf-8' when reading the json file.
     8. Cannot accept list of column references or list of columns for both `x` and `y` in the plot code.
+    9. Depending on the data, you can also use tables to visualize the data if it is suitable.
     """
 
     prompt = dspy.InputField(prefix="User's prompt:")
