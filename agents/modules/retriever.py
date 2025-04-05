@@ -4,7 +4,11 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from openai import OpenAI
-from agents.utils.mcp_server import mcp
+import importlib
+
+# TODO: multiple MCP servers
+from agents.utils.mcp_server_nodit import mcp
+# from agents.utils.mcp_server_1inch import mcp
 import asyncio
 
 SYSTEM_PROMPT = """
@@ -23,6 +27,9 @@ class MCPRetrieverAgent:
                 api_key=os.getenv("OPENAI_API_KEY"),
                 base_url=os.getenv("OPENAI_BASE_URL"),
             )
+            
+            # Get current MCP server from backend state
+            self.mcp = self._get_mcp_server()
             
             # Initialize empty lists
             self.tools = []
@@ -43,10 +50,25 @@ class MCPRetrieverAgent:
             logger.error(f"Failed to initialize MCPRetrieverAgent: {str(e)}")
             raise
             
+    def _get_mcp_server(self):
+        """Get the current MCP server based on backend state"""
+        from backend.routes.mcp import current_mcp_server
+        
+        # Import the appropriate MCP server module
+        module_name = f"agents.utils.mcp_server_{current_mcp_server}"
+        try:
+            mcp_module = importlib.import_module(module_name)
+            return mcp_module.mcp
+        except ImportError as e:
+            logger.error(f"Failed to import MCP server module: {str(e)}")
+            # Fall back to nodit if import fails
+            fallback_module = importlib.import_module("agents.utils.mcp_server_nodit")
+            return fallback_module.mcp
+
     async def initialize_tools(self):
         """Async method to initialize tools"""
         try:
-            self.tools = await mcp.list_tools()
+            self.tools = await self.mcp.list_tools()
             
             print("tools: ", self.tools)
             
@@ -124,6 +146,17 @@ class MCPRetrieverAgent:
                             else:
                                 result = func(**args)
                             logger.info(f"Tool execution successful: {tool_name}")
+                            
+                            # TODO:
+                            from agents.utils.format_utils import format_obj, flatten_json
+                            # Format and flatten each item
+                            flattened_items = []
+                            for item in result:
+                                formatted_item = format_obj(item)
+                                flattened_item = flatten_json(formatted_item)
+                                flattened_items.append(flattened_item)
+                            
+                            result = flattened_items
                         else:
                             error_msg = f"Tool {tool_name} not found in available tools"
                             logger.error(error_msg)

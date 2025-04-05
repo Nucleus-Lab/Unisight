@@ -23,21 +23,15 @@ async def main(prompts: List[str]):
         result = await pipeline.generate_visualization(prompt)
         results.append(result)
         
-        print("Done generating visualization")
-        
-        # get the output png file path for analysis later
+        # Get the output png file path for analysis later
         img_paths.append(result["output_png_path"])
         
-    
     # Initialize analysis pipeline
     analysis_pipeline = AnalysisPipeline()
     await analysis_pipeline.initialize()
     
-    print("Done initializing analysis pipeline")
-    
     # Analyze the images
     analysis = await analysis_pipeline.analyze_figures(img_paths, prompts)
-    print("Done analyzing figures")
     return results, analysis
 
 if __name__ == "__main__":
