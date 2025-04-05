@@ -3,7 +3,7 @@
 
 import dspy
 import pandas as pd
-import os
+import kaleido
 import re
 
 class Visualizer(dspy.Signature):
@@ -15,13 +15,14 @@ class Visualizer(dspy.Signature):
     Remember, do not directly use the sample data of the json file, you need to read the data from the json file. 
     Do not assume what the data is, always read the data from the json file. You can refer to sample data for the structure of the data.
     
-    Styling rules:
+    Rules:
     1. When u plot wallet address or contract address, only show the first 4 and last 4 characters, with ellipsis in the middle because they are too long.
+    2. No need to use fig.show() in the plot code, just return the plot code.
     """
 
     prompt = dspy.InputField(prefix="User's prompt:")
     task = dspy.InputField(prefix="The current task split from the user's prompt:")
-    file_name = dspy.InputField(prefix="The file name of the json data:")
+    file_path = dspy.InputField(prefix="The file path of the json data:")
     sample_data = dspy.InputField(prefix="The sample data of the json file:")
     reasoning = dspy.OutputField(
         prefix="Which information should be visualized based on the user's prompt?"
@@ -35,9 +36,9 @@ class VisualizerAgent:
         self.visualize = dspy.Predict(Visualizer, max_tokens=16000)
         
     def visualize_by_prompt(
-        self, prompt: str, task: str, file_name: str
+        self, prompt: str, task: str, file_path: str, output_png_path: str
     ):
-        df = pd.read_json(file_name)
+        df = pd.read_json(file_path)
         sample_data = df.head(5)
         
         print(f"The sample data: {sample_data}")
@@ -46,8 +47,8 @@ class VisualizerAgent:
         response = self.visualize(
             prompt=prompt,
             task=task,
-            file_name=file_name,
-            sample_data=sample_data
+            file_path=file_path,
+            sample_data=sample_data,
         )
         plot_code = response.plot_code
         print(f"[DEBUG] Generated plot code:\n{plot_code}")
@@ -65,7 +66,7 @@ class VisualizerAgent:
                 'pd': pd,
                 'json': json,
                 'go': go,
-                'file_path': file_name  # Also provide the file path
+                'file_path': file_path  # Also provide the file path
             }
             
             # Execute the code in the namespace
@@ -82,6 +83,10 @@ class VisualizerAgent:
             fig_json = fig.to_json()
             print("[INFO] Successfully converted figure to JSON")
             
+            # Save the figure to the output png path
+            fig.write_image(output_png_path)
+            print(f"[INFO] Successfully saved figure to {output_png_path}")
+            
             return fig_json
             
         except Exception as e:
@@ -95,9 +100,9 @@ class VisualizerAgent:
 # Run a quick test
 if __name__ == "__main__":
     json_filepath = "data/retriever_results/20250405_021246_get_balance_0x1f9090aaE28b8a3dCeaDf281B0F12828e676.json"
-    visualizer = VisualizerAgent()
-    visualizer.visualize_by_prompt(
+    visualizer = VisualizerAgent(
         prompt="Is Ethereum suitable to invest right now?",
         task="Retrieve the current price and historical price trends of Ethereum.",
-        file_name=json_filepath
+        file_path=json_filepath,
+        output_png_path="data/visualization_results/20250405_021246_get_balance_0x1f9090aaE28b8a3dCeaDf281B0F12828e676.png"
     )

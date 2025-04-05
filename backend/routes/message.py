@@ -14,8 +14,6 @@ from backend.database.message import create_message, get_messages_for_canvas, ge
 
 from agents.main import main as agent_main
 
-from archive.visualization import generate_gpt_chart
-
 router = APIRouter()
 
 class MessageRequest(BaseModel):
@@ -78,9 +76,9 @@ async def send_message(
         )
         
         # TODO: Add logic to interact with AI
-        results = await agent_main([message.text])
+        visualization_results, analysis = await agent_main([message.text])
         visualization_ids = []
-        for result in results:
+        for result in visualization_results:
             # Parse the json data
             json_data = json.loads(result['fig_json'])
             # Save the json visualization to the database
@@ -88,9 +86,7 @@ async def send_message(
             visualization_ids.append(visualization.visualization_id)
             
         print("visualization_ids: ", visualization_ids)
-        
-        # TODO: Add logic to get analysis from the AI
-        analysis = "This is a test analysis"
+        print("analysis: ", analysis)
         
         # Save the analysis as a message from the AI to the database
         ai_message = create_message(

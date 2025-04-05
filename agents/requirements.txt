@@ -6,3 +6,4 @@ plotly
 pandas
 nest-asyncio
 fastapi-mcp
+kaleido==0.1.0.post1   # must be this version to avoid hanging on fig.write_image()

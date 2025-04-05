@@ -1,19 +1,15 @@
 import dspy
 from dotenv import load_dotenv
-import os
 import logging
-import pandas as pd
-import json
 import asyncio
 from typing import List, Optional
 from agents.modules.planner import Planner
-from agents.modules.retriever import MCPRetrieverAgent
-from agents.modules.visualizer import VisualizerAgent
+from agents.modules.figure_analyzer import FigureAnalyzerAgent
+from agents.pipelines.visualization_pipeline import VisualizationPipeline
 
-class VisualizationPipeline:
+class AnalysisPipeline:
     def __init__(self):
-        self.retriever: Optional[MCPRetrieverAgent] = None
-        self.visualizer: Optional[VisualizerAgent] = None
+        self.figure_analyzer: Optional[FigureAnalyzerAgent] = None
         self.is_initialized = False
         
     async def initialize(self):
@@ -23,19 +19,17 @@ class VisualizationPipeline:
             return
             
         try:
-            print("[INFO] Initializing visualization pipeline...")
+            print("[INFO] Initializing analysis pipeline...")
             
             # Initialize DSPy configuration
             self._initialize_dspy()
             
             # Initialize agents
-            self.retriever = MCPRetrieverAgent()
-            await self.retriever.initialize_tools()
-            self.visualizer = VisualizerAgent()
+            self.figure_analyzer = FigureAnalyzerAgent()
             
             self.is_initialized = True
             print("[INFO] Pipeline initialization complete")
-            
+
         except Exception as e:
             print(f"[ERROR] Failed to initialize pipeline: {str(e)}")
             raise
@@ -49,53 +43,32 @@ class VisualizationPipeline:
         for logger_name in loggers:
             logger = logging.getLogger(logger_name)
             logger.setLevel(logging.CRITICAL + 1)
-
-        # Configure DSPy with the language model
-        model_name = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
-        api_key = os.getenv("OPENAI_API_KEY")
-        api_base = os.getenv("OPENAI_BASE_URL")
-
-        if not api_key:
-            raise ValueError("[ERROR] OPENAI_API_KEY not set in .env file")
-
-        print(f"[INFO] Initializing DSPy with model: {model_name}")
         
-        lm = dspy.LM(
-            model=model_name,
-            api_key=api_key,
-            api_base=api_base if api_base else None
-        )
-        dspy.configure(lm=lm)
-            
-    async def generate_visualization(self, prompt: str):
-        """Generate visualization for a given prompt"""
+    async def analyze_figures(self, image_paths: list[str], prompt: str = "Please analyze the figure and provide a detailed description of the figure."):
+        """Analyze multiple images using OpenAI Vision API"""
         if not self.is_initialized:
             raise RuntimeError("Pipeline not initialized. Call initialize() first")
-            
+        
         try:
-            print(f"\n=== Retrieving data for task: {prompt} ===")
-            result = await self.retriever.retrieve_by_prompt(prompt)
+            print(f"\n=== Analyzing figures for prompt: {prompt} ===")
             
-            print(f"Status: {result['success']}")
-            print(f"Json file path: {result['file_path']}")
+            # TODO: after added planner, prompt and task prompt should be different, no longer a list here
             
-            if result["success"]:
-                fig_json = self.visualizer.visualize_by_prompt(prompt, prompt, result["file_path"])
-                print(f"[INFO] Successfully generated visualization")
-                result["fig_json"] = fig_json
-                return result
-            else:
-                print(f"[ERROR] Failed to retrieve data: {result.get('error', 'Unknown error')}")
-                return result
-                
+            # Call the analysis function    
+            analysis = self.figure_analyzer.analyze_figures(image_paths, prompt[0])
+            print(f"[INFO] Analysis complete: {analysis}")
+            
+            return analysis
+        
         except Exception as e:
-            error_msg = f"Failed to generate visualization: {str(e)}"
+            error_msg = f"Failed to analyze figures: {str(e)}"
             print(f"[ERROR] {error_msg}")
             return {
                 "success": False,
                 "error": error_msg
             }
-
+            
+            
 async def main(prompts: List[str]):
     # Load environment variables
     load_dotenv()
@@ -105,6 +78,7 @@ async def main(prompts: List[str]):
     await pipeline.initialize()
     
     results = []
+    img_paths = []
     for prompt in prompts:
         print(f"\n{'='*50}")
         print(f"Processing prompt: {prompt}")
@@ -113,7 +87,22 @@ async def main(prompts: List[str]):
         result = await pipeline.generate_visualization(prompt)
         results.append(result)
         
-    return results
+        print("Done generating visualization")
+        
+        # get the output png file path for analysis later
+        img_paths.append(result["output_png_path"])
+        
+    
+    # Initialize analysis pipeline
+    analysis_pipeline = AnalysisPipeline()
+    await analysis_pipeline.initialize()
+    
+    print("Done initializing analysis pipeline")
+    
+    # Analyze the images
+    analysis = await analysis_pipeline.analyze_figures(img_paths, prompts)
+    print("Done analyzing figures")
+    return results, analysis
 
 if __name__ == "__main__":
     # Example prompts
