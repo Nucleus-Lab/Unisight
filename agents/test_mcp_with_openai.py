@@ -4,6 +4,7 @@ import subprocess
 import time
 import asyncio
 import requests
+import argparse
 from contextlib import AsyncExitStack
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -11,6 +12,20 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 import sys
 from prompts.prompt import SYSTEM_PROMPT
+
+import json
+
+# 解析命令行参数
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Test MCP server with OpenAI')
+    parser.add_argument('--server', type=str, default='mcp_server.py',
+                        help='MCP server script path (default: mcp_server.py)')
+    parser.add_argument('--address', type=str, 
+                        default='0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+                        help='Example blockchain address to use in tests')
+    parser.add_argument('--model', type=str, default='gpt-4o',
+                        help='OpenAI model to use (default: gpt-4o)')
+    return parser.parse_args()
 
 # Load environment variables
 load_dotenv()
@@ -23,6 +38,9 @@ if not OPENAI_API_KEY:
     # Save it for future use
     with open(".env", "a") as f:
         f.write(f"\nOPENAI_API_KEY=\"{OPENAI_API_KEY}\"\n")
+
+# 从环境变量获取模型名称，如果没有则使用默认值
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o")
 
 # Initialize OpenAI client
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -68,8 +86,10 @@ class MCPClient:
         # Make the actual tool call through the MCP protocol
         result = await self.session.call_tool(tool_name, tool_args)
         
-        print(f"\nTool result: {result.content}")
-        return result.content
+        # Print the result
+        print(f"\nTool result: {result}")
+        
+        return result
     
     async def close(self):
         """Close the MCP client connection"""
@@ -83,16 +103,25 @@ class MCPClient:
 
 async def test_with_openai():
     """Test the MCP server using OpenAI"""
-    print("Testing MCP server with OpenAI...")
+    # 解析命令行参数
+    args = parse_arguments()
     
-    # Example token contract address (USDC on Ethereum)
-    token_address = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+    print("Testing MCP server with OpenAI...")
+    print(f"Using server script: {args.server}")
+    print(f"Using example address: {args.address}")
+    print(f"Using OpenAI model: {args.model}")
+    
+    # 保存模型名称为局部变量，确保在整个函数中可用
+    model_name = args.model
+    
+    # Example blockchain address
+    example_address = args.address
     
     # Connect to the MCP server
     try:
         print("Connecting to MCP server...")
         mcp_client = MCPClient()
-        tools = await mcp_client.connect_to_server("mcp_server.py")
+        tools = await mcp_client.connect_to_server(args.server)
         print(f"Successfully connected to MCP server. Found {len(tools)} tools.")
     except Exception as e:
         print(f"Failed to connect to MCP server: {str(e)}")
@@ -144,7 +173,7 @@ async def test_with_openai():
         try:
             # Add timeout to prevent hanging indefinitely
             response = client.chat.completions.create(
-                model="gpt-4o",  # Using a faster model
+                model=model_name,  # 使用保存的模型名称而不是 args.model
                 messages=conversation_history,
                 tools=openai_tools,
                 tool_choice="auto",
@@ -199,61 +228,39 @@ async def test_with_openai():
                     result = await mcp_client.call_tool(tool_name, args)
                     print("Successfully called MCP tool")
                     
-                    # Parse the result
-                    print("Parsing tool result...")
-                    if isinstance(result, str):
-                        try:
-                            result_data = json.loads(result)
-                        except json.JSONDecodeError as e:
-                            print(f"Error parsing JSON result: {str(e)}")
-                            print(f"Raw result: {result}")
-                            result_data = {"error": "Failed to parse result", "raw_result": result}
-                    else:
-                        # 处理 TextContent 对象或其他非字符串对象
-                        try:
-                            # 如果对象有 text 属性，尝试使用它
-                            if hasattr(result, 'text'):
-                                try:
-                                    result_data = json.loads(result.text)
-                                except json.JSONDecodeError:
-                                    result_data = {"text": result.text}
-                            # 否则尝试直接转换对象
-                            else:
-                                # 尝试将对象转换为字典
-                                if hasattr(result, '__dict__'):
-                                    result_data = result.__dict__
-                                else:
-                                    # 最后的尝试：将对象转换为字符串
-                                    result_data = {"result": str(result)}
-                        except Exception as e:
-                            print(f"Error converting result to JSON: {str(e)}")
-                            result_data = {"error": "Failed to convert result to JSON", "result_type": str(type(result))}
-                    
-                    # 添加工具结果到历史记录
+                    # Get the result as a string
+                    print("Processing tool result...")
+                    import pdb; pdb.set_trace()
+                    # Convert result to string for OpenAI
                     try:
-                        # 确保 result_data 是可 JSON 序列化的
-                        json_content = json.dumps(result_data)
+                        # Try to get a string representation that OpenAI can use
+                        if hasattr(result, 'content') and hasattr(result.content, 'text'):
+                            result_string = result.content.text
+                        else:
+                            result_string = str(result)
+                        
+                        # Add tool result to conversation history
                         conversation_history.append({
                             "role": "tool",
                             "tool_call_id": tool_call.id,
                             "name": tool_name,
-                            "content": json_content
+                            "content": result_string
                         })
-                    except TypeError as e:
-                        print(f"Error serializing result to JSON: {str(e)}")
-                        # 使用简单的错误消息作为后备
+                    except Exception as e:
+                        print(f"Error processing result: {str(e)}")
+                        # Use a simple error message as fallback
                         conversation_history.append({
                             "role": "tool",
                             "tool_call_id": tool_call.id,
                             "name": tool_name,
-                            "content": json.dumps({"error": "Could not serialize result", "result_type": str(type(result_data))})
+                            "content": f"Error processing result: {str(e)}"
                         })
                     
                     # Send the result back to OpenAI for interpretation
                     print("\nSending follow-up request to OpenAI with the tool results...")
                     try:
                         follow_up_response = client.chat.completions.create(
-                            model="gpt-4o",  # Using a faster model
+                            model=model_name,  # 使用保存的模型名称而不是 args.model
                             messages=conversation_history,
                             timeout=30  # 30 seconds timeout
                         )
