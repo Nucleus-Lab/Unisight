@@ -1,15 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from typing import Optional, List
+from pydantic import BaseModel
+from datetime import datetime
+import json
+
 from backend.database import get_db
 from backend.database.user import get_user, create_user
 from backend.database.canvas import get_canvas, create_canvas
 from backend.database.visualization import create_visualization
-from typing import Optional, List
-from pydantic import BaseModel
-from datetime import datetime
 from backend.constants import AI_USER_ID
 from backend.database.message import create_message, get_messages_for_canvas, get_message_by_id
-import json
+
+from agents.main import main as agent_main
 
 from archive.visualization import generate_gpt_chart
 
@@ -75,14 +78,11 @@ async def send_message(
         )
         
         # TODO: Add logic to interact with AI
-        # assume we got the json data from the AI
-        json_data_list = []
-        json_data_list.append(generate_gpt_chart())
-
+        results = await agent_main([message.text])
         visualization_ids = []
-        for json_data in json_data_list:
+        for result in results:
             # Parse the json data
-            json_data = json.loads(json_data)
+            json_data = json.loads(result['fig_json'])
             # Save the json visualization to the database
             visualization = create_visualization(db, canvas.canvas_id, json_data)
             visualization_ids.append(visualization.visualization_id)
@@ -121,6 +121,8 @@ async def send_message(
 
     except Exception as e:
         print(f"Error in send_message: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="Internal server error")
     
 

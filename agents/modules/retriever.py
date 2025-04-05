@@ -4,7 +4,8 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from openai import OpenAI
-from agents.utils.mcp_client import MCPClient
+from agents.utils.mcp_server import mcp
+import asyncio
 
 SYSTEM_PROMPT = """
 You are an AI assistant that can interact with blockchain data through an MCP server.
@@ -23,10 +24,31 @@ class MCPRetrieverAgent:
                 base_url=os.getenv("OPENAI_BASE_URL"),
             )
             
-            # Connect to the MCP server
-            self.mcp_client = MCPClient()
-            self.tools = self.mcp_client.connect_to_server("agents/utils/mcp_server.py")
-            logger.info(f"Successfully connected to MCP server. Found {len(self.tools)} tools.")
+            # Initialize empty lists
+            self.tools = []
+            self.openai_tools = []
+            
+            # Create results directory if it doesn't exist
+            self.results_dir = Path("data/retriever_results")
+            self.results_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Initialize conversation history with system prompt
+            self.conversation_history = [
+                {"role": "system", "content": SYSTEM_PROMPT}
+            ]
+            
+            # We'll initialize tools in a separate async method
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize MCPRetrieverAgent: {str(e)}")
+            raise
+            
+    async def initialize_tools(self):
+        """Async method to initialize tools"""
+        try:
+            self.tools = await mcp.list_tools()
+            
+            print("tools: ", self.tools)
             
             # Convert MCP tools to OpenAI format
             self.openai_tools = []
@@ -43,18 +65,9 @@ class MCPRetrieverAgent:
             
             if not self.openai_tools:
                 logger.warning("No suitable tools found for OpenAI to use")
-            
-            # Initialize conversation history with system prompt
-            self.conversation_history = [
-                {"role": "system", "content": SYSTEM_PROMPT}
-            ]
-            
-            # Create results directory if it doesn't exist
-            self.results_dir = Path("data/retriever_results")
-            self.results_dir.mkdir(parents=True, exist_ok=True)
-            
+                
         except Exception as e:
-            logger.error(f"Failed to initialize MCPRetrieverAgent: {str(e)}")
+            logger.error(f"Failed to initialize tools: {str(e)}")
             raise
 
     def _generate_filename(self, prompt: str) -> str:
@@ -64,18 +77,9 @@ class MCPRetrieverAgent:
         safe_prompt = "".join(c if c.isalnum() else "_" for c in prompt[:50]).rstrip("_")
         return f"{timestamp}_{safe_prompt}.json"
 
-    def retrieve_by_prompt(self, prompt: str) -> dict:
+    async def retrieve_by_prompt(self, prompt: str) -> dict:
         """
         Process a prompt, execute tools, and save results to a JSON file
-        
-        Args:
-            prompt (str): The user's prompt/question
-            
-        Returns:
-            dict: A dictionary containing:
-                - success (bool): Whether the operation was successful
-                - file_path (str): Path to the saved JSON file (if successful)
-                - error (str): Error message (if not successful)
         """
         try:
             logger.info(f"Processing prompt: {prompt}")
@@ -95,15 +99,13 @@ class MCPRetrieverAgent:
             # Get the assistant's message
             assistant_message = response.choices[0].message
             
-            # Initialize results dictionary
-            results = {
-                "prompt": prompt,
-                "timestamp": datetime.now().isoformat(),
-                "tools_results": {}
-            }
+            result = None
             
             # Check if OpenAI wants to call any tools
             if hasattr(assistant_message, 'tool_calls') and assistant_message.tool_calls:
+                # Create a mapping of tool names to their callable functions
+                tool_map = {tool.name: tool.fn for tool in self.tools}
+                
                 for tool_call in assistant_message.tool_calls:
                     tool_name = tool_call.function.name
                     logger.info(f"Executing tool: {tool_name}")
@@ -112,42 +114,24 @@ class MCPRetrieverAgent:
                     args = json.loads(tool_call.function.arguments)
                     logger.info(f"Tool arguments: {json.dumps(args, indent=2)}")
                     
-                    # Call the tool
+                    # Call the function with proper async handling
                     try:
-                        result = self.mcp_client.call_tool(tool_name, args)
-                        
-                        # Parse the result
-                        if isinstance(result, str):
-                            try:
-                                result_data = json.loads(result)
-                            except json.JSONDecodeError:
-                                result_data = {"raw_result": result}
-                        else:
-                            # Handle non-string results
-                            if hasattr(result, 'text'):
-                                try:
-                                    result_data = json.loads(result.text)
-                                except json.JSONDecodeError:
-                                    result_data = {"text": result.text}
-                            elif hasattr(result, '__dict__'):
-                                result_data = result.__dict__
+                        if tool_name in tool_map:
+                            func = tool_map[tool_name]
+                            # Check if the function is async
+                            if asyncio.iscoroutinefunction(func):
+                                result = await func(**args)
                             else:
-                                result_data = {"result": str(result)}
-                        
-                        # Store the result
-                        results["tools_results"][tool_name] = {
-                            "arguments": args,
-                            "result": result_data
-                        }
-                        logger.info(f"Tool {tool_name} executed successfully")
-                        
+                                result = func(**args)
+                            logger.info(f"Tool execution successful: {tool_name}")
+                        else:
+                            error_msg = f"Tool {tool_name} not found in available tools"
+                            logger.error(error_msg)
+                            raise ValueError(error_msg)
                     except Exception as e:
                         error_msg = f"Error executing tool {tool_name}: {str(e)}"
                         logger.error(error_msg)
-                        results["tools_results"][tool_name] = {
-                            "arguments": args,
-                            "error": error_msg
-                        }
+                        raise
             
             # Generate filename and save results
             filename = self._generate_filename(prompt)
@@ -155,9 +139,9 @@ class MCPRetrieverAgent:
             
             # Save results to JSON file
             with open(file_path, 'w', encoding='utf-8') as f:
-                json.dump(results, f, indent=2, ensure_ascii=False)
+                json.dump(result, f, indent=2, ensure_ascii=False)
             
-            logger.info(f"Results saved to {file_path}")
+            logger.info(f"Result saved to {file_path}")
             
             return {
                 "success": True,
@@ -171,12 +155,3 @@ class MCPRetrieverAgent:
                 "success": False,
                 "error": error_msg
             }
-
-    def close(self):
-        """Clean up resources"""
-        try:
-            if hasattr(self, 'mcp_client'):
-                self.mcp_client.close()
-                logger.info("MCPRetrieverAgent closed successfully")
-        except Exception as e:
-            logger.error(f"Error closing MCPRetrieverAgent: {str(e)}")

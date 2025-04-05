@@ -75,8 +75,18 @@ class MCPClient:
         async def _call_tool():
             try:
                 result = await self.session.call_tool(tool_name, tool_args)
-                logger.info(f"Tool result: {result.content}")
-                return result.content
+                
+                data = json.loads(result.content[0].text)["items"]
+                
+                logger.info("data: ", data)
+                
+                # try to parse the data into a pandas dataframe
+                # import pandas as pd
+                # df = pd.DataFrame(data)
+                # logger.info("df head: %s", df.head())
+                # logger.info("df columns: %s", df.columns)
+                
+                return data
             except Exception as e:
                 logger.error(f"Error calling tool {tool_name}: {str(e)}")
                 raise

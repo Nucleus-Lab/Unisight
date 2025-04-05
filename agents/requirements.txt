@@ -2,3 +2,7 @@ mcp   # python >= 3.10
 dspy==2.6.16
 requests
 openai
+plotly
+pandas
+nest-asyncio
+fastapi-mcp
