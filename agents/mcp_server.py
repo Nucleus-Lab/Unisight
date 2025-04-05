@@ -466,6 +466,334 @@ def search_token_contract_by_keyword(blockchain: str = "arbitrum", network: str 
         raise Exception("Failed to parse API response")
 
 
+@mcp.tool()
+def create_webhook(
+    blockchain: str = "ethereum", 
+    network: str = "mainnet", 
+    event_type: str = None, 
+    description: str = None,
+    webhook_url: str = None,
+    condition: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """
+    Create a webhook to receive notifications for blockchain events.
+    
+    Args:
+        blockchain: The blockchain to query (ethereum, arbitrum, optimism, base, polygon, avalanche)
+        network: The network to query (mainnet or sepolia)
+        event_type: The type of event to subscribe to (ADDRESS_ACTIVITY, MINED_TRANSACTION, SUCCESSFUL_TRANSACTION, 
+                   FAILED_TRANSACTION, TOKEN_TRANSFER, BELOW_THRESHOLD_BALANCE, BLOCK_PERIOD, 
+                   BLOCK_LIST_CALLER, ALLOW_LIST_CALLER, LOG)
+        description: A description for this webhook
+        webhook_url: The URL that will receive webhook notifications
+        condition: A dictionary containing conditions specific to the event type. Each event type requires
+                  different condition parameters:
+                  
+                  For ADDRESS_ACTIVITY:
+                  {"addresses": ["0x123...", "0x456..."]} - List of addresses to monitor
+                  
+                  For TOKEN_TRANSFER:
+                  {"addresses": ["0x123..."]} - List of addresses to monitor, or
+                  {"contractAddress": "0x123..."} - Contract address to monitor, or
+                  {"contractAddress": "0x123...", "tokenId": "123"} - For NFTs, specify contract and token ID
+                  
+                  For BLOCK_PERIOD:
+                  {"period": 1} - Receive notification every N blocks
+                  
+                  For BELOW_THRESHOLD_BALANCE:
+                  {"address": "0x123...", "threshold": "1000000000000000000", "tokenAddress": "0x456..."}
+                  
+                  For MINED_TRANSACTION:
+                  {"txHash": "0x123..."} - Transaction hash to monitor
+                  
+                  For SUCCESSFUL_TRANSACTION:
+                  {"txHash": "0x123..."} - Transaction hash to monitor
+                  
+                  For FAILED_TRANSACTION:
+                  {"txHash": "0x123..."} - Transaction hash to monitor
+                  
+                  For BLOCK_LIST_CALLER:
+                  {"addresses": ["0x123..."]} - List of addresses to block
+                  
+                  For ALLOW_LIST_CALLER:
+                  {"addresses": ["0x123..."]} - List of addresses to allow
+                  
+                  For LOG:
+                  {"address": "0x123...", "topics": ["0x456..."]} - Contract address and event topics
+        
+    Returns:
+        Webhook subscription details including the subscription ID
+    """
+    if not event_type:
+        raise ValueError("event_type is required")
+    
+    if not webhook_url:
+        raise ValueError("webhook_url is required")
+    
+    if not condition:
+        raise ValueError("condition is required")
+    
+    if blockchain not in BLOCKCHAINS:
+        raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of {BLOCKCHAINS}")
+    
+    if network not in NETWORKS:
+        raise ValueError(f"Unsupported network: {network}. Must be one of {NETWORKS}")
+    
+    url = f"{BASE_URL}/{blockchain}/{network}/webhooks"
+    
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "X-API-KEY": API_KEY
+    }
+    
+    # Prepare the request payload
+    payload = {
+        "eventType": event_type,
+        "notification": {
+            "webhookUrl": webhook_url
+        },
+        "condition": condition
+    }
+    
+    # Add description if provided
+    if description:
+        payload["description"] = description
+    
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        result = response.json()
+        
+        # Return the webhook details
+        return result
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"API request failed: {str(e)}")
+    except json.JSONDecodeError:
+        raise Exception("Failed to parse API response")
+
+
+@mcp.tool()
+def get_webhook(
+    blockchain: str = "ethereum", 
+    network: str = "mainnet", 
+    subscription_id: str = None
+) -> Dict[str, Any]:
+    """
+    Get details of a specific webhook subscription.
+    
+    Args:
+        blockchain: The blockchain to query (ethereum, arbitrum, optimism, base, polygon, avalanche)
+        network: The network to query (mainnet or sepolia)
+        subscription_id: The ID of the webhook subscription to retrieve
+        
+    Returns:
+        Webhook subscription details
+    """
+    if not subscription_id:
+        raise ValueError("subscription_id is required")
+    
+    if blockchain not in BLOCKCHAINS:
+        raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of {BLOCKCHAINS}")
+    
+    if network not in NETWORKS:
+        raise ValueError(f"Unsupported network: {network}. Must be one of {NETWORKS}")
+    
+    url = f"{BASE_URL}/{blockchain}/{network}/webhooks/{subscription_id}"
+    
+    headers = {
+        "accept": "application/json",
+        "X-API-KEY": API_KEY
+    }
+    
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        result = response.json()
+        
+        # Return the webhook details
+        return result
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"API request failed: {str(e)}")
+    except json.JSONDecodeError:
+        raise Exception("Failed to parse API response")
+
+
+@mcp.tool()
+def update_webhook(
+    blockchain: str = "ethereum", 
+    network: str = "mainnet", 
+    subscription_id: str = None,
+    description: str = None,
+    webhook_url: str = None,
+    condition: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """
+    Update an existing webhook subscription.
+    
+    Args:
+        blockchain: The blockchain to query (ethereum, arbitrum, optimism, base, polygon, avalanche)
+        network: The network to query (mainnet or sepolia)
+        subscription_id: The ID of the webhook subscription to update
+        description: A new description for this webhook
+        webhook_url: A new URL that will receive webhook notifications
+        condition: New conditions specific to the event type
+        
+    Returns:
+        Updated webhook subscription details
+    """
+    if not subscription_id:
+        raise ValueError("subscription_id is required")
+    
+    if blockchain not in BLOCKCHAINS:
+        raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of {BLOCKCHAINS}")
+    
+    if network not in NETWORKS:
+        raise ValueError(f"Unsupported network: {network}. Must be one of {NETWORKS}")
+    
+    url = f"{BASE_URL}/{blockchain}/{network}/webhooks/{subscription_id}"
+    
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "X-API-KEY": API_KEY
+    }
+    
+    # Prepare the update payload
+    payload = {}
+    
+    if description:
+        payload["description"] = description
+    
+    if webhook_url:
+        if "notification" not in payload:
+            payload["notification"] = {}
+        payload["notification"]["webhookUrl"] = webhook_url
+    
+    if condition:
+        payload["condition"] = condition
+    
+    # If no updates were specified, raise an error
+    if not payload:
+        raise ValueError("At least one of description, webhook_url, or condition must be provided")
+    
+    try:
+        response = requests.patch(url, json=payload, headers=headers)
+        response.raise_for_status()
+        result = response.json()
+        
+        # Return the updated webhook details
+        return result
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"API request failed: {str(e)}")
+    except json.JSONDecodeError:
+        raise Exception("Failed to parse API response")
+
+
+@mcp.tool()
+def delete_webhook(
+    blockchain: str = "ethereum", 
+    network: str = "mainnet", 
+    subscription_id: str = None
+) -> Dict[str, Any]:
+    """
+    Delete a webhook subscription.
+    
+    Args:
+        blockchain: The blockchain to query (ethereum, arbitrum, optimism, base, polygon, avalanche)
+        network: The network to query (mainnet or sepolia)
+        subscription_id: The ID of the webhook subscription to delete
+        
+    Returns:
+        Confirmation of deletion
+    """
+    if not subscription_id:
+        raise ValueError("subscription_id is required")
+    
+    if blockchain not in BLOCKCHAINS:
+        raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of {BLOCKCHAINS}")
+    
+    if network not in NETWORKS:
+        raise ValueError(f"Unsupported network: {network}. Must be one of {NETWORKS}")
+    
+    url = f"{BASE_URL}/{blockchain}/{network}/webhooks/{subscription_id}"
+    
+    headers = {
+        "accept": "application/json",
+        "X-API-KEY": API_KEY
+    }
+    
+    try:
+        response = requests.delete(url, headers=headers)
+        response.raise_for_status()
+        
+        # Return success message
+        return {"status": "success", "message": f"Webhook subscription {subscription_id} deleted successfully"}
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"API request failed: {str(e)}")
+
+
+@mcp.tool()
+def get_webhook_history(
+    blockchain: str = "ethereum", 
+    network: str = "mainnet", 
+    subscription_id: str = None,
+    rpp: int = 20,
+    cursor: str = None
+) -> List[Dict[str, Any]]:
+    """
+    Get the history of webhook notifications for a specific subscription.
+    
+    Args:
+        blockchain: The blockchain to query (ethereum, arbitrum, optimism, base, polygon, avalanche)
+        network: The network to query (mainnet or sepolia)
+        subscription_id: The ID of the webhook subscription
+        rpp: The number of results per page (default: 20, max: 100)
+        cursor: The cursor for pagination (default: None)
+        
+    Returns:
+        List of webhook notification history items
+    """
+    if not subscription_id:
+        raise ValueError("subscription_id is required")
+    
+    if blockchain not in BLOCKCHAINS:
+        raise ValueError(f"Unsupported blockchain: {blockchain}. Must be one of {BLOCKCHAINS}")
+    
+    if network not in NETWORKS:
+        raise ValueError(f"Unsupported network: {network}. Must be one of {NETWORKS}")
+    
+    if rpp > 100:
+        rpp = 100  # API limit
+    
+    url = f"{BASE_URL}/{blockchain}/{network}/webhooks/{subscription_id}/history"
+    
+    headers = {
+        "accept": "application/json",
+        "X-API-KEY": API_KEY
+    }
+    
+    params = {
+        "rpp": rpp
+    }
+    
+    # Add cursor for pagination if provided
+    if cursor:
+        params["cursor"] = cursor
+    
+    try:
+        response = requests.get(url, params=params, headers=headers)
+        response.raise_for_status()
+        result = response.json()
+        
+        # Return just the items array
+        return result.get("items", [])
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"API request failed: {str(e)}")
+    except json.JSONDecodeError:
+        raise Exception("Failed to parse API response")
+
+
 # Run the server
 if __name__ == "__main__":
     # Log server startup
