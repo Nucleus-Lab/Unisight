@@ -159,7 +159,7 @@ async def send_message(
                     img_paths.append(mod_result["output_png_path"])
                     
             # call the ai agent again to get the analysis
-            prompt = "Please analyze the figure(s) and reply the user. Here is the user's original prompt: " + message.text + ". Here is the img paths for the generated figures: " + ", ".join(img_paths)
+            prompt = "You have already modified the figure(s). Now, please analyze the modified figure(s) and reply the user. Here is the user's original prompt: " + message.text + ". Here is the img paths for the modified figures: " + ", ".join(img_paths)
             second_ai_results = await agent_main(prompt)
             ai_message_text = second_ai_results["analysis"]
                 

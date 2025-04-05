@@ -9,12 +9,56 @@ const Canvas = ({ visualizationIds = [], setActiveVisualizations }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const bottomRef = useRef(null);
+  const visualizationRefs = useRef({});
 
-  // Add auto-scroll effect
+  // Add auto-scroll effect for new visualizations
   useEffect(() => {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: 'smooth' });
     }
+  }, [visualizations]);
+
+  // Listen for visualization update events
+  useEffect(() => {
+    const handleVisualizationUpdated = (event) => {
+      const { visualizationId } = event.detail;
+      console.log('Canvas - Received visualization update event for ID:', visualizationId);
+      
+      // Find the visualization in our list
+      const vizIndex = visualizations.findIndex(viz => viz.id === visualizationId);
+      
+      if (vizIndex >= 0) {
+        console.log('Canvas - Found visualization at index:', vizIndex);
+        
+        // Create a ref for this visualization if it doesn't exist
+        if (!visualizationRefs.current[visualizationId]) {
+          visualizationRefs.current[visualizationId] = React.createRef();
+        }
+        
+        // Scroll to the visualization after a short delay to ensure it's rendered
+        setTimeout(() => {
+          if (visualizationRefs.current[visualizationId]?.current) {
+            console.log('Canvas - Scrolling to visualization:', visualizationId);
+            visualizationRefs.current[visualizationId].current.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'center'
+            });
+          } else {
+            console.warn('Canvas - Could not find ref for visualization:', visualizationId);
+          }
+        }, 100);
+      } else {
+        console.warn('Canvas - Visualization not found in current list:', visualizationId);
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('visualizationUpdated', handleVisualizationUpdated);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('visualizationUpdated', handleVisualizationUpdated);
+    };
   }, [visualizations]);
 
   useEffect(() => {
@@ -104,11 +148,15 @@ const Canvas = ({ visualizationIds = [], setActiveVisualizations }) => {
   return (
     <div className="flex flex-col w-full space-y-6 p-4 overflow-y-auto">
       {visualizations.map((visualization, index) => (
-        <VisualizationCard
+        <div 
           key={`viz-${visualization.id || index}`}
-          plotData={visualization.data}
-          visualizationId={visualization.id}
-        />
+          ref={visualizationRefs.current[visualization.id] || null}
+        >
+          <VisualizationCard
+            plotData={visualization.data}
+            visualizationId={visualization.id}
+          />
+        </div>
       ))}
       <div ref={bottomRef} /> {/* Add ref for auto-scrolling */}
     </div>

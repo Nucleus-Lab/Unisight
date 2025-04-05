@@ -161,13 +161,59 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
 
       // Handle visualizations if any
       if (response.visualization_ids?.length > 0) {
-        console.log('ChatInterface - Adding new visualizations:', response.visualization_ids);
+        console.log('ChatInterface - Processing visualizations:', response.visualization_ids);
+        
+        // Track if we have any modified visualizations
+        let hasModifiedVisualizations = false;
+        let firstModifiedOrNewId = null;
+        
         setActiveVisualizations(prev => {
-          const newVisualizations = [...prev, ...response.visualization_ids];
-          console.log('ChatInterface - Updated visualization list:', newVisualizations);
-          return newVisualizations;
+          // Create a new array to store the updated visualizations
+          const updatedVisualizations = [...prev];
+          
+          // Process each visualization ID from the response
+          response.visualization_ids.forEach(vizId => {
+            // Check if this visualization ID already exists in our active list
+            const existingIndex = updatedVisualizations.indexOf(vizId);
+            
+            if (existingIndex >= 0) {
+              // This is a modified visualization - it already exists
+              console.log(`ChatInterface - Visualization ${vizId} already exists, updating in place`);
+              hasModifiedVisualizations = true;
+              
+              // If we haven't found a modified visualization yet, this is the first one
+              if (!firstModifiedOrNewId) {
+                firstModifiedOrNewId = vizId;
+              }
+            } else {
+              // This is a new visualization - add it to the list
+              console.log(`ChatInterface - Adding new visualization ${vizId}`);
+              updatedVisualizations.push(vizId);
+              
+              // If we haven't found a modified visualization yet, this is the first new one
+              if (!firstModifiedOrNewId) {
+                firstModifiedOrNewId = vizId;
+              }
+            }
+          });
+          
+          console.log('ChatInterface - Updated visualization list:', updatedVisualizations);
+          return updatedVisualizations;
         });
+        
+        // Switch to canvas tab
         setActiveTab('canvas');
+        
+        // If we have a modified or new visualization, we'll need to scroll to it
+        // This will be handled by the Canvas component's useEffect
+        if (firstModifiedOrNewId) {
+          console.log(`ChatInterface - First modified/new visualization ID: ${firstModifiedOrNewId}`);
+          // We'll use a custom event to notify the Canvas component
+          const event = new CustomEvent('visualizationUpdated', { 
+            detail: { visualizationId: firstModifiedOrNewId } 
+          });
+          window.dispatchEvent(event);
+        }
       }
 
     } catch (error) {
