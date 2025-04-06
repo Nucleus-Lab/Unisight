@@ -117,7 +117,9 @@ npx hardhat run scripts/deploy.js --network <network-name>
 ## Development
 
 ### Project Structure
+```
 ├── agents/ # AI agents implementation
 ├── backend/ # Python backend server
 ├── frontend/ # React frontend application
 └── hardhat/ # Smart contract development
+```
