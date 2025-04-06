@@ -280,7 +280,7 @@ const ChatInterface = ({ setActiveTab, setActiveVisualizations }) => {
   return (
     <div className="flex flex-col h-full w-[400px] min-w-[400px]">
       {/* Fixed MCP Selector Header */}
-      <div className="border-b bg-white p-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
+      <div className="bg-white p-2 flex justify-between items-center sticky top-0 z-10">
         <MCPSelector />
       </div>
 

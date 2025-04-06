@@ -15,8 +15,18 @@ const Navbar = () => {
       <div className="h-full max-w-7xl mx-auto px-4 flex items-center justify-between">
         {/* Left - Logo */}
         <div className="flex-shrink-0">
-          <span className="text-xl font-semibold text-gray-800">LOGO</span>
+          <img 
+            src="/assets/logo.png" 
+            alt="Logo" 
+            className="h-8 w-auto" // Adjust height as needed
+            style={{ 
+              objectFit: 'contain',
+              filter: 'brightness(0.9)' // Optional: adjust the brightness to match your theme
+            }}
+          />
         </div>
+        <span className="px-2 text-xl font-semibold text-gray-800">Unisight</span>
+
 
         {/* Center - Navigation */}
         <div className="hidden md:flex items-center justify-center flex-1 px-8">

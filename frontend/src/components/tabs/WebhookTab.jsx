@@ -14,12 +14,11 @@ const WebhookTab = () => {
     network: 'mainnet',
     eventType: 'ADDRESS_ACTIVITY',
     notification: {
-      webhookUrl: 'https://d0a2-111-235-226-130.ngrok-free.app'
+      webhookUrl: 'https://47d3-111-235-226-130.ngrok-free.app'
     },
     condition: {
       addresses: ['0xae2fc483527b8ef99eb5d9b44875f005ba1fae13']
     },
-    createdAt: '2025-04-05T20:01:54.880Z'
   };
 
   // Function to format timestamp to local time
@@ -70,12 +69,12 @@ const WebhookTab = () => {
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
         <h2 className="text-lg font-medium mb-2">Active Webhook Configuration</h2>
         <div className="bg-gray-50 p-3 rounded-md space-y-2">
-          <div>
+          {/* <div>
             <p className="text-sm text-gray-600 mb-1">Subscription ID:</p>
             <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
               {webhookDetails.subscriptionId}
             </code>
-          </div>
+          </div> */}
           
           <div>
             <p className="text-sm text-gray-600 mb-1">Webhook URL:</p>
@@ -102,12 +101,12 @@ const WebhookTab = () => {
             </div>
           </div>
 
-          <div>
+          {/* <div>
             <p className="text-sm text-gray-600 mb-1">Created At:</p>
             <p className="text-sm">
               {formatTimestamp(webhookDetails.createdAt)}
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -133,7 +132,7 @@ const WebhookTab = () => {
             <div>
               <p className="text-sm text-gray-600 mb-1">Event Type:</p>
               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                {latestEvent.event_type}
+                {latestEvent.data.eventType}
               </span>
             </div>
 

@@ -2,9 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import VisualizationCard from '../visualization/VisualizationCard';
 import { getVisualization, getCanvasVisualizations } from '../../services/api';
 import { useCanvas } from '../../contexts/CanvasContext';
+import { usePrivy } from '@privy-io/react-auth';
+import WelcomeAnimation from '../common/WelcomeAnimation';
 
 const Canvas = ({ visualizationIds = [], setActiveVisualizations }) => {
   const { currentCanvasId } = useCanvas();
+  const { authenticated, user } = usePrivy();
   const [visualizations, setVisualizations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -112,14 +115,18 @@ const Canvas = ({ visualizationIds = [], setActiveVisualizations }) => {
       }
     };
 
-    // Fetch if we have either visualization IDs or a canvas ID
-    if ((visualizationIds && visualizationIds.length > 0) || currentCanvasId) {
+    // Only fetch if user is authenticated and we have either visualization IDs or a canvas ID
+    if (authenticated && user?.wallet?.address && ((visualizationIds && visualizationIds.length > 0) || currentCanvasId)) {
       fetchVisualizations();
     } else {
       setLoading(false);
       setVisualizations([]);
     }
-  }, [visualizationIds, currentCanvasId, setActiveVisualizations]); // Add setActiveVisualizations to dependencies
+  }, [visualizationIds, currentCanvasId, setActiveVisualizations, authenticated, user?.wallet?.address]);
+
+  if (!authenticated) {
+    return <WelcomeAnimation />;
+  }
 
   if (loading) {
     return (

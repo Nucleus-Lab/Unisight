@@ -21,7 +21,7 @@ const WelcomeAnimation = () => {
         setIsVisible(true);
       }, 500); // Half a second for fade out
       
-    }, 3000); // Change every 3 seconds
+    }, 2000); // Change every 3 seconds
     
     return () => clearInterval(interval);
   }, []);
@@ -30,7 +30,7 @@ const WelcomeAnimation = () => {
     <div className="flex flex-col items-center justify-center h-full">
       <div className="text-center">
         <h1 className="text-4xl font-bold text-gray-800 flex items-center justify-center">
-          <span>LOGO is</span>
+          <span>Unisight is</span>
           <span 
             className={`ml-2 transition-opacity duration-500 ${
               isVisible ? 'opacity-100' : 'opacity-0'
