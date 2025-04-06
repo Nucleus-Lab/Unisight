@@ -1,6 +1,8 @@
 # Unisight: One-click On-Chain Data Visualizations and Insights
 
-A decentralized application that combines AI agents, smart contracts, and a modern web interface. The project consists of four main components: AI agents for intelligent interactions, a backend server, a React frontend, and smart contracts deployed on multiple networks.
+Unisight is an AI-powered platform that enables anyone—regardless of technical background—to explore, visualize, and analyze on-chain data through natural language. By removing the need to write SQL queries or code, Unisight makes blockchain data truly accessible. The core idea is to turn data interaction into a conversational experience, helping users unlock insights effortlessly.
+
+The project consists of four main components: AI agents for intelligent interactions, a Python backend server, a React frontend, and Solidity smart contracts deployed on multiple networks.
 
 ## Architecture
 
