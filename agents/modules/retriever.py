@@ -158,14 +158,20 @@ class MCPRetrieverAgent:
                                 result = func(**args)
                             logger.info(f"Tool execution successful: {tool_name}")
                             
-                            # Format and flatten each item
-                            flattened_items = []
-                            for item in result:
-                                formatted_item = format_obj(item)
-                                flattened_item = flatten_json(formatted_item)
-                                flattened_items.append(flattened_item)
+                            from backend.routes.mcp import current_mcp_server
                             
-                            result = flattened_items
+                            if current_mcp_server == "zircuit":
+                                formatted_item = format_obj(result)
+                                flattened_item = flatten_json(formatted_item)
+                                result = [flattened_item]
+                            else:
+                                # Format and flatten each item
+                                flattened_items = []
+                                for item in result:
+                                    formatted_item = format_obj(item)
+                                    flattened_item = flatten_json(formatted_item)
+                                    flattened_items.append(flattened_item)
+                                result = flattened_items
                             
                             # Add tool response to conversation history
                             messages.append({
@@ -185,6 +191,8 @@ class MCPRetrieverAgent:
                             raise ValueError(error_msg)
                     except Exception as e:
                         error_msg = f"Error executing tool {tool_name}: {str(e)}"
+                        import traceback
+                        logger.error(traceback.format_exc())
                         logger.error(error_msg)
                         raise
             
@@ -206,6 +214,8 @@ class MCPRetrieverAgent:
         except Exception as e:
             error_msg = f"Error in retrieve_by_prompt: {str(e)}"
             logger.error(error_msg)
+            import traceback
+            logger.error(traceback.format_exc())
             return {
                 "success": False,
                 "error": error_msg

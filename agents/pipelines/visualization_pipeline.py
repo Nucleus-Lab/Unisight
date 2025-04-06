@@ -76,15 +76,13 @@ class VisualizationPipeline:
             print(f"\n=== Retrieving data for task: {prompt} ===")
             result = await self.retriever.retrieve_by_prompt(prompt, conversation_history)
             
-            print(f"Status: {result['success']}")
-            print(f"Json file path: {result['file_path']}")
-            
-            # extract filename from the file path
-            file_name = Path(result["file_path"]).name
-            # build the output png file path
-            os.makedirs(os.getenv('VISUALIZATION_RESULTS_DIR'), exist_ok=True)
-            output_png_path = f"{os.getenv('VISUALIZATION_RESULTS_DIR')}/{file_name}.png"
-            result["output_png_path"] = output_png_path
+            if result.get("file_path"):
+                # extract filename from the file path
+                file_name = Path(result["file_path"]).name
+                # build the output png file path
+                os.makedirs(os.getenv('VISUALIZATION_RESULTS_DIR'), exist_ok=True)
+                output_png_path = f"{os.getenv('VISUALIZATION_RESULTS_DIR')}/{file_name}.png"
+                result["output_png_path"] = output_png_path
             
             if result["success"]:
                 fig_json = self.visualizer.visualize_by_prompt(prompt, prompt, result["file_path"], output_png_path, conversation_history)

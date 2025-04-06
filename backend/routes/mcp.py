@@ -5,7 +5,7 @@ from typing import List
 router = APIRouter()
 
 # Store current MCP server selection
-current_mcp_server = "1inch"  # default to nodit
+current_mcp_server = "nodit"  # default to nodit
 
 class MCPServer(BaseModel):
     name: str

@@ -6,6 +6,10 @@ def flatten_json(nested_json, parent_key="", sep="."):
     """
     Flatten a nested JSON object into a flat dictionary with dot notation keys
     """
+    import json
+    if isinstance(nested_json, str):
+        nested_json = json.loads(nested_json)
+        
     items = {}
     for key, value in nested_json.items():
         new_key = f"{parent_key}{sep}{key}" if parent_key else key
@@ -14,7 +18,6 @@ def flatten_json(nested_json, parent_key="", sep="."):
         else:
             items[new_key] = value
     return items
-
 
 def format_obj(obj):
     """

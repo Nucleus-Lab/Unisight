@@ -139,7 +139,7 @@ async def main(
         results = {"message": parameters["message"]}
         results["action"] = action
     return results
-
+        
 if __name__ == "__main__":
     prompts = [
         "Compare the protocol and token profit and loss for this wallet address on Arbitrum mainnet: 0x8a7fd3eb9e41b3dd1b37f853b7a5252c59a782fd",

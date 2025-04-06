@@ -22,8 +22,7 @@ async def receive_nodit_webhook(request: Request):
     try:
         # Get the raw body
         body = await request.json()
-        logger.info(f"Received webhook request with body: {body}")
-        
+
         # Create a new event entry
         event = {
             "id": str(uuid.uuid4()),
@@ -32,8 +31,6 @@ async def receive_nodit_webhook(request: Request):
             "data": body,
             "status": "success"
         }
-        
-        logger.info(f"Created webhook event: {event}")
         
         # Store the event (in memory for MVP)
         webhook_events.append(event)
