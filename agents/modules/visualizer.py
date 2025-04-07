@@ -18,7 +18,7 @@ class Visualizer(dspy.Signature):
     
     Rules:
     1. Always check what data is available in the json file. The sample data is given to you.
-    2. Only use columns that are available in the data! Avoid keyerror!
+    2. Only use columns that are available in the data! Avoid keyerror! Strictly follow the column names in the sample data.
     3. When u plot wallet address or contract address, only show the first 4 and last 4 characters, with ellipsis in the middle because they are too long.
     4. No need to use fig.show() in the plot code, just return the plot code.
     5. If the data is token balances or similar, you should get the decimals of the contract from the data and then convert the balance to the token's decimal so that the visualization scale is easier to understand.
