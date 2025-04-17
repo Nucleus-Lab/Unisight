@@ -2,6 +2,8 @@
 
 Unisight is an AI-powered platform that enables anyone—regardless of technical background—to explore, visualize, and analyze on-chain data through natural language. By removing the need to write SQL queries or code, Unisight makes blockchain data truly accessible. The core idea is to turn data interaction into a conversational experience, helping users unlock insights effortlessly.
 
+Unisight is currently deployed at [https://nucleuslab.xyz/unisight/](https://nucleuslab.xyz/unisight/) for demo purposes.
+
 The project consists of four main components: AI agents for intelligent interactions, a Python backend server, a React frontend, and Solidity smart contracts deployed on multiple networks.
 
 ## Architecture
