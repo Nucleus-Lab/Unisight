@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import AuthButton from './AuthButton';
+import logo from '../../assets/logo.png';
 
 const Navbar = () => {
   // Placeholder navigation items - can be expanded later
@@ -16,7 +17,7 @@ const Navbar = () => {
         {/* Left - Logo */}
         <div className="flex-shrink-0">
           <img 
-            src="/assets/logo.png" 
+            src={logo} 
             alt="Logo" 
             className="h-8 w-auto" // Adjust height as needed
             style={{ 
