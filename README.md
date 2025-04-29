@@ -127,3 +127,14 @@ npx hardhat run scripts/deploy.js --network <network-name>
 ├── frontend/ # React frontend application
 └── hardhat/ # Smart contract development
 ```
+
+## Project Showcase
+
+### ETHGlobal Taipei
+
+UniSight was showcased at ETHGlobal Taipei. You can view our submission details here:
+[UniSight ETHGlobal Taipei Showcase](https://ethglobal.com/showcase/unisight-ix2jt)
+
+### Awards and Recognition
+- **1inch Award**: 1st place in "Use the Dev Portal APIs to streamline your dApp development" category
+- **Zircuit Award**: Winner of "Best use of AI" category
